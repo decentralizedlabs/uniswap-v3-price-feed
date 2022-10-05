@@ -2,9 +2,8 @@
 pragma solidity >=0.8.0;
 
 import "./structs/UniswapPoolInfo.sol";
-import { OracleLibrary } from "@uniswap/v3-periphery/libraries/OracleLibrary.sol";
-// import { OracleLibrary } from "./OracleLibrary.sol";
-import { IUniswapV3Factory } from "@uniswap/v3-core/interfaces/IUniswapV3Factory.sol";
+import { OracleLibrary } from "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
+import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 contract PriceFeeds {
   /// =================================
