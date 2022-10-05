@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
 import "./structs/UniswapPoolInfo.sol";
-import { OracleLibrary } from "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import { OracleLibrary } from "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 
 contract PriceFeeds {
   /// =================================
@@ -18,7 +18,7 @@ contract PriceFeeds {
   /// =================================
 
   /// Mapping from currency to UniswapPoolInfo
-  mapping(address => mapping(address => UniswapPoolInfo)) public _pools;
+  mapping(address => mapping(address => UniswapPoolInfo)) public pools;
 
   /// =================================
   /// ========== Constructor ==========
@@ -46,23 +46,23 @@ contract PriceFeeds {
 
   /** @notice Given a currency and baseWeiPrice, calculates the price of a currency.
    * Derived from Uniswap v3-periphery OracleLibrary.
-   * @param baseToken Address of an ERC20 token contract used as the quoteAmount denomination
+   * @param baseAmount Amount of token to be converted
+   * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
-   * @param baseAmount Amount of wei to be converted
    * @param secondsAgo Twap interval used to calculate the quote
    * @return quoteAmount Equivalent amount of ERC20 token for weiPrice
    */
-  function _getCurrencyPrice(
+  function getCurrencyPrice(
+    uint128 baseAmount,
     address baseToken,
     address quoteToken,
-    uint128 baseAmount,
     uint32 secondsAgo
   ) public view returns (uint256 quoteAmount) {
     (address token0, address token1) = baseToken < quoteToken
       ? (baseToken, quoteToken)
       : (quoteToken, baseToken);
 
-    address pool = _pools[token0][token1].poolAddress;
+    address pool = pools[token0][token1].poolAddress;
 
     if (pool != address(0)) {
       (int24 arithmeticMeanTick, uint128 harmonicMeanLiquidity) = OracleLibrary
