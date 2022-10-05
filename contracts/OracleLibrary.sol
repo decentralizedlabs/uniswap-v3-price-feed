@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0;
 
 import { PRBMath } from "lib/prb-math/contracts/PRBMath.sol";
-import { IUniswapV3Pool } from "lib/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import { IUniswapV3Pool } from "@uniswap/v3-core/interfaces/IUniswapV3Pool.sol";
 
 /// @title Oracle library
 /// @notice Provides functions to integrate with V3 pool oracle
@@ -11,7 +11,7 @@ import { IUniswapV3Pool } from "lib/v3-core/contracts/interfaces/IUniswapV3Pool.
 /// - Cast uint32 variables to int64 when required
 /// - Added `getSqrtRatioAtTick` from Uniswap/TickMath
 /// - Updated function visibility to public
-abstract contract OracleLibrary {
+library OracleLibrary {
   /// @notice Calculates time-weighted means of tick and liquidity for a given Uniswap V3 pool
   /// @param pool Address of the pool that we want to observe
   /// @param secondsAgo Number of seconds in the past from which to calculate the time-weighted means

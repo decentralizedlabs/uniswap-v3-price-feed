@@ -2,10 +2,11 @@
 pragma solidity >=0.8.0;
 
 import "./structs/UniswapPoolInfo.sol";
+import { OracleLibrary } from "@uniswap/v3-periphery/libraries/OracleLibrary.sol";
 import { OracleLibrary } from "./OracleLibrary.sol";
-import { IUniswapV3Factory } from "lib/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import { IUniswapV3Factory } from "@uniswap/v3-core/interfaces/IUniswapV3Factory.sol";
 
-contract PriceFeeds is OracleLibrary {
+contract PriceFeeds {
   /// =================================
   /// ======= Immutable Storage =======
   /// =================================
@@ -58,25 +59,17 @@ contract PriceFeeds is OracleLibrary {
     uint128 baseAmount,
     uint32 secondsAgo
   ) public view returns (uint256 quoteAmount) {
-    address token0;
-    address token1;
-    if (baseToken < quoteToken) {
-      token0 = baseToken;
-      token1 = quoteToken;
-    } else {
-      token0 = quoteToken;
-      token1 = baseToken;
-    }
+    (address token0, address token1) = baseToken < quoteToken
+      ? (baseToken, quoteToken)
+      : (quoteToken, baseToken);
 
     address pool = _pools[token0][token1].poolAddress;
 
     if (pool != address(0)) {
-      (int24 arithmeticMeanTick, uint128 harmonicMeanLiquidity) = consult(
-        pool,
-        secondsAgo
-      );
+      (int24 arithmeticMeanTick, uint128 harmonicMeanLiquidity) = OracleLibrary
+        .consult(pool, secondsAgo);
 
-      quoteAmount = getQuoteAtTick(
+      quoteAmount = OracleLibrary.getQuoteAtTick(
         arithmeticMeanTick,
         baseAmount,
         baseToken,
