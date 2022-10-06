@@ -100,21 +100,21 @@ contract PriceFeed is IPriceFeed {
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
    * @return pool address, fee and last edit timestamp.
    *
-   * Note: Set updateInterval to 0 to only update the pool if it's not stored yet.
+   * Note: Set updateInterval to 0 to always trigger an update, or to block.timestamp to only update if a pool
+   * has not been stored yet.
    */
   function getUpdatedPool(
     address tokenA,
     address tokenB,
     uint256 updateInterval
   ) public returns (PoolData memory pool) {
-    pool = getPool(tokenA, tokenB);
+    // If updateInterval has not passed since lastUpdatedTimestamp
+    if (pool.lastUpdatedTimestamp + updateInterval > block.timestamp) {
+      pool = getPool(tokenA, tokenB);
+    }
 
-    // If updateInterval has passed since last updated or if no pool is stored
-    if (
-      (updateInterval != 0 &&
-        pool.lastUpdatedTimestamp + updateInterval < block.timestamp) ||
-      pool.poolAddress == address(0)
-    ) {
+    // If no pool is stored or updateInterval has passed since lastUpdatedTimestamp
+    if (pool.poolAddress == address(0)) {
       pool = updatePool(tokenA, tokenB);
     }
   }
@@ -127,7 +127,8 @@ contract PriceFeed is IPriceFeed {
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
    * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
    *
-   * Note: Set updateInterval to 0 to only update the pool if it's not stored yet.
+   * Note: Set updateInterval to 0 to always trigger an update, or to block.timestamp to only update if a pool
+   * has not been stored yet.
    */
   function getQuoteAndUpdatePool(
     uint128 baseAmount,
