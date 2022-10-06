@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0;
 
 import "../structs/PoolData.sol";
-import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 interface IPriceFeed {
   function uniswapV3Factory() external view returns (address uniswapV3Factory);
