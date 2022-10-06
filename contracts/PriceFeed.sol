@@ -99,6 +99,8 @@ contract PriceFeed is IPriceFeed {
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
    * @return pool address, fee and last edit timestamp.
+   *
+   * Note: Set updateInterval to 0 to only update the pool if it's not stored yet.
    */
   function getUpdatedPool(
     address tokenA,
@@ -124,6 +126,8 @@ contract PriceFeed is IPriceFeed {
    * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
    * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
+   *
+   * Note: Set updateInterval to 0 to only update the pool if it's not stored yet.
    */
   function getQuoteAndUpdatePool(
     uint128 baseAmount,
