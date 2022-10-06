@@ -63,12 +63,12 @@ contract PriceFeed is IPriceFeed {
       : (tokenB, tokenA);
 
     // Add reference for highest pool and liquidity value
-    uint128 highestLiquidity;
+    uint256 highestLiquidity;
 
     // Add reference for values used in loop
     uint24[] memory fees_ = fees;
     address poolAddress;
-    uint128 harmonicMeanLiquidity;
+    uint256 harmonicMeanLiquidity;
     for (uint256 i; i < fees_.length; ) {
       // Compute pool address
       poolAddress = PoolAddress.computeAddress(
