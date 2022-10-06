@@ -213,6 +213,7 @@ contract PriceFeed is IPriceFeed {
   }
 
   /// @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `arithmeticMeanTick`.
+  /// @dev Silently handles OLD errors in `uniswapV3Pool.observe` to avoid reverting `updatePool`.
   /// @param pool Address of the pool that we want to observe
   /// @param secondsAgo Number of seconds in the past from which to calculate the time-weighted means
   /// @return harmonicMeanLiquidity The harmonic mean liquidity from (block.timestamp - secondsAgo) to block.timestamp
@@ -221,24 +222,32 @@ contract PriceFeed is IPriceFeed {
     view
     returns (uint128 harmonicMeanLiquidity)
   {
-    require(secondsAgo != 0, "BP");
-
     uint32[] memory secondsAgos = new uint32[](2);
     secondsAgos[0] = secondsAgo;
     secondsAgos[1] = 0;
 
-    (, uint160[] memory secondsPerLiquidityCumulativeX128s) = IUniswapV3Pool(
-      pool
-    ).observe(secondsAgos);
-
-    uint160 secondsPerLiquidityCumulativesDelta = secondsPerLiquidityCumulativeX128s[
-        1
-      ] - secondsPerLiquidityCumulativeX128s[0];
-
-    // We are multiplying here instead of shifting to ensure that harmonicMeanLiquidity doesn't overflow uint128
-    uint192 secondsAgoX160 = uint192(secondsAgo) * type(uint160).max;
-    harmonicMeanLiquidity = uint128(
-      secondsAgoX160 / (uint192(secondsPerLiquidityCumulativesDelta) << 32)
+    // Call uniswapV3Pool.observe
+    (bool success, bytes memory data) = pool.staticcall(
+      abi.encodeWithSelector(0x883bdbfd, secondsAgos)
     );
+
+    // If observe hasn't reverted
+    if (success) {
+      // Decode `secondsPerLiquidityCumulativeX128s` from returned data
+      (, uint160[] memory secondsPerLiquidityCumulativeX128s) = abi.decode(
+        data,
+        (int56[], uint160[])
+      );
+
+      uint160 secondsPerLiquidityCumulativesDelta = secondsPerLiquidityCumulativeX128s[
+          1
+        ] - secondsPerLiquidityCumulativeX128s[0];
+
+      // We are multiplying here instead of shifting to ensure that harmonicMeanLiquidity doesn't overflow uint128
+      uint192 secondsAgoX160 = uint192(secondsAgo) * type(uint160).max;
+      harmonicMeanLiquidity = uint128(
+        secondsAgoX160 / (uint192(secondsPerLiquidityCumulativesDelta) << 32)
+      );
+    }
   }
 }
