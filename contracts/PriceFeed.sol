@@ -4,7 +4,7 @@ pragma solidity >=0.8.0;
 import "./interfaces/IPriceFeed.sol";
 import { OracleLibrary } from "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import { PoolAddress } from "@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol";
+import { PoolAddress } from "./utils/PoolAddress.sol";
 
 /**
  * @title PriceFeed
@@ -76,18 +76,21 @@ contract PriceFeed is IPriceFeed {
         PoolAddress.PoolKey(token0, token1, fees_[i])
       );
 
-      // Get 30-min harmonic mean liquidity
-      harmonicMeanLiquidity = _getHarmonicMeanLiquidity(poolAddress, 1800);
+      // If pool has been deployed
+      if (poolAddress.code.length > 0) {
+        // Get 30-min harmonic mean liquidity
+        harmonicMeanLiquidity = _getHarmonicMeanLiquidity(poolAddress, 1800);
 
-      // If liquidity is higher than the previously stored one
-      if (harmonicMeanLiquidity > highestLiquidity) {
-        // Update reference values
-        highestLiquidity = harmonicMeanLiquidity;
-        highestLiquidityPool = PoolData(
-          poolAddress,
-          fees_[i],
-          uint48(block.timestamp)
-        );
+        // If liquidity is higher than the previously stored one
+        if (harmonicMeanLiquidity > highestLiquidity) {
+          // Update reference values
+          highestLiquidity = harmonicMeanLiquidity;
+          highestLiquidityPool = PoolData(
+            poolAddress,
+            fees_[i],
+            uint48(block.timestamp)
+          );
+        }
       }
 
       unchecked {
