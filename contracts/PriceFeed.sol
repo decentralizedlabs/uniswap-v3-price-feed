@@ -171,9 +171,10 @@ contract PriceFeed is IPriceFeed {
 
     // Add reference for values used in loop
     uint24[] memory fees_ = fees;
+    uint256 nFees = fees_.length;
     address poolAddress;
     uint256 harmonicMeanLiquidity;
-    for (uint256 i; i < fees_.length; ) {
+    for (uint256 i; i < nFees; ) {
       // Compute pool address
       poolAddress = PoolAddress.computeAddress(
         uniswapV3Factory,
@@ -181,7 +182,7 @@ contract PriceFeed is IPriceFeed {
       );
 
       // If pool has been deployed
-      if (poolAddress.code.length > 0) {
+      if (poolAddress.code.length != 0) {
         // Get 30-min harmonic mean liquidity
         harmonicMeanLiquidity = _getHarmonicMeanLiquidity(poolAddress, 1800);
 
