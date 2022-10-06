@@ -48,6 +48,96 @@ contract PriceFeed is IPriceFeed {
   /// =========== Functions ===========
   /// =================================
 
+  /** @notice Retrieves pool given tokenA and tokenB, regardless of order.
+   * @param tokenA Address of one of the ERC20 token contract in the pool
+   * @param tokenB Address of the other ERC20 token contract in the pool
+   * @return pool address, fee and last edit timestamp.
+   */
+  function getPool(address tokenA, address tokenB)
+    public
+    view
+    returns (PoolData memory pool)
+  {
+    (address token0, address token1) = tokenA < tokenB
+      ? (tokenA, tokenB)
+      : (tokenB, tokenA);
+
+    pool = pools[token0][token1];
+  }
+
+  /** @notice Get the time-weighted quote of `quoteToken` received in exchange for a `baseAmount`
+   * of `baseToken`, from the pool with highest liquidity, based on a `secondsAgo` twap interval.
+   * Requirement: secondsAgo must be greater than 0.
+   * @param baseAmount Amount of token to be converted
+   * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
+   * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
+   * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
+   * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
+   */
+  function getQuote(
+    uint128 baseAmount,
+    address baseToken,
+    address quoteToken,
+    uint32 secondsAgo
+  ) public view returns (uint256 quoteAmount) {
+    address pool = getPool(baseToken, quoteToken).poolAddress;
+
+    if (pool != address(0)) {
+      int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
+
+      quoteAmount = OracleLibrary.getQuoteAtTick(
+        arithmeticMeanTick,
+        baseAmount,
+        baseToken,
+        quoteToken
+      );
+    }
+  }
+
+  /** @notice Retrieves pool given tokenA and tokenB, regardless of order, and updates pool if necessary.
+   * @param tokenA Address of one of the ERC20 token contract in the pool
+   * @param tokenB Address of the other ERC20 token contract in the pool
+   * @return pool address, fee and last edit timestamp.
+   */
+  function getPoolAndUpdate(address tokenA, address tokenB)
+    public
+    returns (PoolData memory pool)
+  {
+    pool = getPool(tokenA, tokenB);
+
+    // If no pool is returned,
+    if (pool.poolAddress == address(0)) {
+      pool = updatePool(tokenA, tokenB);
+    }
+  }
+
+  /** @notice Get the time-weighted quote of `quoteToken`, and updates the pool in case there is no pool stored.
+   * @param baseAmount Amount of token to be converted
+   * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
+   * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
+   * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
+   * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
+   */
+  function getQuoteAndUpdate(
+    uint128 baseAmount,
+    address baseToken,
+    address quoteToken,
+    uint32 secondsAgo
+  ) public returns (uint256 quoteAmount) {
+    address pool = getPoolAndUpdate(baseToken, quoteToken).poolAddress;
+
+    if (pool != address(0)) {
+      int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
+
+      quoteAmount = OracleLibrary.getQuoteAtTick(
+        arithmeticMeanTick,
+        baseAmount,
+        baseToken,
+        quoteToken
+      );
+    }
+  }
+
   /** @notice Updates stored pool with the one having the highest liquidity.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
@@ -102,84 +192,6 @@ contract PriceFeed is IPriceFeed {
     /// @dev New value should be stored even if highestPool = currentPool to update `lastUpdatedTimestamp`.
     pools[token0][token1] = highestLiquidityPool;
     emit PoolUpdated(highestLiquidityPool);
-  }
-
-  /** @notice Get the time-weighted quote of `quoteToken` received in exchange for a `baseAmount`
-   * of `baseToken`, from the pool with highest liquidity, based on a `secondsAgo` twap interval.
-   * Requirement: secondsAgo must be greater than 0.
-   * @param baseAmount Amount of token to be converted
-   * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
-   * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
-   * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
-   * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
-   */
-  function getQuote(
-    uint128 baseAmount,
-    address baseToken,
-    address quoteToken,
-    uint32 secondsAgo
-  ) public view returns (uint256 quoteAmount) {
-    address pool = getPool(baseToken, quoteToken).poolAddress;
-
-    if (pool != address(0)) {
-      int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
-
-      quoteAmount = OracleLibrary.getQuoteAtTick(
-        arithmeticMeanTick,
-        baseAmount,
-        baseToken,
-        quoteToken
-      );
-    }
-  }
-
-  /** @notice Get the time-weighted quote of `quoteToken`, and updates the pool in case there is no pool stored.
-   * @param baseAmount Amount of token to be converted
-   * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
-   * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
-   * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
-   * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
-   */
-  function getQuoteAndUpdate(
-    uint128 baseAmount,
-    address baseToken,
-    address quoteToken,
-    uint32 secondsAgo
-  ) public returns (uint256 quoteAmount) {
-    address pool = getPool(baseToken, quoteToken).poolAddress;
-
-    // If no pool is returned,
-    if (pool == address(0)) {
-      pool = updatePool(baseToken, quoteToken).poolAddress;
-    }
-
-    if (pool != address(0)) {
-      int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
-
-      quoteAmount = OracleLibrary.getQuoteAtTick(
-        arithmeticMeanTick,
-        baseAmount,
-        baseToken,
-        quoteToken
-      );
-    }
-  }
-
-  /** @notice Retrieves pool given baseToken and quoteToken, regardless of order.
-   * @param tokenA Address of one of the ERC20 token contract in the pool
-   * @param tokenB Address of the other ERC20 token contract in the pool
-   * @return pool address, fee and last edit timestamp.
-   */
-  function getPool(address tokenA, address tokenB)
-    public
-    view
-    returns (PoolData memory pool)
-  {
-    (address token0, address token1) = tokenA < tokenB
-      ? (tokenA, tokenB)
-      : (tokenB, tokenA);
-
-    pool = pools[token0][token1];
   }
 
   /// @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `harmonicMeanLiquidity`.
