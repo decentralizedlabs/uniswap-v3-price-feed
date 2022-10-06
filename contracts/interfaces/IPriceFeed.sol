@@ -1,6 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
+import "../structs/PoolData.sol";
+import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+
 interface IPriceFeed {
-  function getPool(address baseToken, address quoteToken) external;
+  function uniswapV3Factory() external view returns (address uniswapV3Factory);
+
+  function pools(address token0, address token1)
+    external
+    view
+    returns (
+      address poolAddress,
+      uint24 fee,
+      uint48 lastUpdatedTimestamp
+    );
+
+  function getPool(address tokenA, address tokenB)
+    external
+    view
+    returns (PoolData memory pool);
+
+  function updatePool(address tokenA, address tokenB)
+    external
+    returns (PoolData memory highestLiquidityPool);
+
+  function getQuote(
+    uint128 baseAmount,
+    address baseToken,
+    address quoteToken,
+    uint32 secondsAgo
+  ) external view returns (uint256 quoteAmount);
+
+  function getQuoteAndUpdate(
+    uint128 baseAmount,
+    address baseToken,
+    address quoteToken,
+    uint32 secondsAgo
+  ) external returns (uint256 quoteAmount);
 }
