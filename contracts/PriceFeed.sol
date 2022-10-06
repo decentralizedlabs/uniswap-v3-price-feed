@@ -97,16 +97,22 @@ contract PriceFeed is IPriceFeed {
   /** @notice Retrieves pool given tokenA and tokenB, regardless of order, and updates pool if necessary.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
+   * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
    * @return pool address, fee and last edit timestamp.
    */
-  function getPoolAndUpdate(address tokenA, address tokenB)
-    public
-    returns (PoolData memory pool)
-  {
+  function getUpdatedPool(
+    address tokenA,
+    address tokenB,
+    uint256 updateInterval
+  ) public returns (PoolData memory pool) {
     pool = getPool(tokenA, tokenB);
 
-    // If no pool is returned,
-    if (pool.poolAddress == address(0)) {
+    // If updateInterval has passed since last updated or if no pool is stored
+    if (
+      (updateInterval != 0 &&
+        pool.lastUpdatedTimestamp + updateInterval < block.timestamp) ||
+      pool.poolAddress == address(0)
+    ) {
       pool = updatePool(tokenA, tokenB);
     }
   }
@@ -116,15 +122,18 @@ contract PriceFeed is IPriceFeed {
    * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
    * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
+   * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
    * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
    */
-  function getQuoteAndUpdate(
+  function getQuoteAndUpdatePool(
     uint128 baseAmount,
     address baseToken,
     address quoteToken,
-    uint32 secondsAgo
+    uint32 secondsAgo,
+    uint256 updateInterval
   ) public returns (uint256 quoteAmount) {
-    address pool = getPoolAndUpdate(baseToken, quoteToken).poolAddress;
+    address pool = getUpdatedPool(baseToken, quoteToken, updateInterval)
+      .poolAddress;
 
     if (pool != address(0)) {
       int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
