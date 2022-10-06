@@ -106,6 +106,7 @@ contract PriceFeed is IPriceFeed {
 
   /** @notice Get the time-weighted quote of `quoteToken` received in exchange for a `baseAmount`
    * of `baseToken`, from the pool with highest liquidity, based on a `secondsAgo` twap interval.
+   * Requirement: secondsAgo must be greater than 0.
    * @param baseAmount Amount of token to be converted
    * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
