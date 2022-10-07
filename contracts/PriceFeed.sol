@@ -109,14 +109,14 @@ contract PriceFeed is IPriceFeed {
     uint256 updateInterval
   ) public returns (PoolData memory pool) {
     // Shortcircuit the case where we need to update
-    if (updateInterval >= block.timestamp) return updatePool(tokenA, tokenB);
+    if (updateInterval == 0) return updatePool(tokenA, tokenB);
 
     pool = getPool(tokenA, tokenB);
 
     // If no pool is stored or updateInterval has passed since lastUpdatedTimestamp
     if (
       pool.poolAddress == address(0) ||
-      pool.lastUpdatedTimestamp + updateInterval >= block.timestamp
+      pool.lastUpdatedTimestamp + updateInterval <= block.timestamp
     ) {
       pool = updatePool(tokenA, tokenB);
     }
