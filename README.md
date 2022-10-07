@@ -11,23 +11,25 @@ Uniswap V3 pools can be used as decentralized price feed oracles. However they h
 
 ## Rationale
 
-This price feed was initially developed by the [Slice protocol](https://slice.so) to provide dynamic pricing for products in any currency.
+This price feed is used by the [Slice protocol](https://slice.so) to provide dynamic pricing for products in any currency.
 
-Slice will constantly use it and keep the pools it interacts with updated, however its usefulness will increase as more folks in the Ethereum ecosystem benefit from it.
+Slice will constantly update the pools it interacts with, however the usefulness of the price feed increases with the number of users in the Ethereum ecosystem who benefit from it.
 
 ## Functions
 
 - `getPool`: Get the main pool for each currency pair from contract storage
 - `getQuote`: Get quote given a currency pair and amount
 - `updatePool`: Update the main pool for a currency pair
-- `getPoolAndUpdate`: Get the pool for a currency pair, and update it if necessary
-- `getQuoteAndUpdate`: Get quote given a currency pair and amount, and update pool if necessary
+- `getUpdatedPool`: Get the pool for a currency pair, and update it if necessary
+- `getQuoteAndUpdatePool`: Get quote given a currency pair and amount, and update pool if necessary
+
+See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 
 ## Gotchas
 
-- Quotes represent a time-weighted average value for a currency in a certain amount of time (see [TWAP oracles](https://docs.uniswap.org/protocol/concepts/V3-overview/oracle)) so they don&apos;t necessarily correspond to the amount displayed during a swap on Uniswap.
+- Quotes represent a time-weighted average price for a currency in a certain amount of time (see [TWAP oracles](https://docs.uniswap.org/protocol/concepts/V3-overview/oracle)). As such they don&apos;t exactly correspond to the amount displayed during a swap on Uniswap, but they're better suited to estimate the value of a currency.
 - While Uniswap V3 TWAP oracles are much more resilient to attacks than V2 pools, an incentivised party may still be able to manipulate the price significantly. This is especially valid for low liquidity pools.
-- The price feed doesn&apos;t impose a specific TWAP interval, so care should be taken by the caller in choosing an appropriate value. Such as `1800` seconds.
+- The price feed doesn&apos;t impose a specific TWAP interval, so care should be taken by the caller in choosing an appropriate value.
 
 ## Support (TBD)
 
