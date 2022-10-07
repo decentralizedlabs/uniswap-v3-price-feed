@@ -16,8 +16,8 @@ jobs:
       - name: Install dependencies
         run: forge install
 
-      - name: Check contract sizes
-        run: forge build --sizes
+      # - name: Check contract sizes
+      #   run: forge build --sizes
 
       - name: Check gas snapshots
         run: forge snapshot --check

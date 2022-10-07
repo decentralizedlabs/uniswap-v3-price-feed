@@ -4,25 +4,25 @@ pragma solidity >=0.8;
 import { DSTestPlus } from "solmate/test/utils/DSTestPlus.sol";
 import { console2 } from "forge-std/console2.sol";
 import { PriceFeed } from "../contracts/PriceFeed.sol";
-import { UniswapV3Factory } from "@uniswap/v3-core/contracts/UniswapV3Factory.sol";
-import { UniswapV3Pool } from "@uniswap/v3-core/contracts/UniswapV3Pool.sol";
-import { ERC20Mock } from "./mocks/ERC20Mock.sol";
+import { MockERC20 } from "./mocks/MockERC20.sol";
+import { MockUniswapV3Factory } from "./mocks/MockUniswapV3Factory.sol";
 
 uint24 constant poolFee = 3000;
 address constant a1 = address(1);
 
 contract BaseTest is DSTestPlus {
   PriceFeed priceFeed;
-  UniswapV3Factory uniswapV3Factory;
-  UniswapV3Pool pool;
-  ERC20Mock token1;
-  ERC20Mock token2;
+  MockUniswapV3Factory uniswapV3Factory;
+  MockERC20 token1;
+  MockERC20 token2;
+
+  // UniswapV3Pool pool;
 
   function setUp() public {
-    uniswapV3Factory = new UniswapV3Factory();
+    uniswapV3Factory = new MockUniswapV3Factory();
     priceFeed = new PriceFeed(address(uniswapV3Factory));
-    token1 = new ERC20Mock();
-    token2 = new ERC20Mock();
+    token1 = new MockERC20();
+    token2 = new MockERC20();
 
     // pool = UniswapV3Pool(
     //   uniswapV3Factory.createPool(address(token1), address(token2), poolFee)
