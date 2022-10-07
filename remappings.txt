@@ -5,3 +5,4 @@ prb-math/=lib/prb-math/contracts/
 solmate/=lib/solmate/src/
 @uniswap/v3-core/=lib/v3-core
 @uniswap/v3-periphery/=lib/v3-periphery
+create3-factory=lib/create3-factory/src
