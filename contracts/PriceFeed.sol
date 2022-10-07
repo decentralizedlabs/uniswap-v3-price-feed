@@ -176,7 +176,7 @@ contract PriceFeed is IPriceFeed {
     uint24[] memory fees_ = fees;
     address poolAddress;
     uint256 harmonicMeanLiquidity;
-    for (uint256 i; i < fees_.length; ) {
+    for (uint256 i; i < 4; ) {
       // Compute pool address
       poolAddress = PoolAddress.computeAddress(
         uniswapV3Factory,
