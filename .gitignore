@@ -1,9 +1,18 @@
+cache/
+out/
+node_modules/
 .DS_Store
 *.aux
 *.log
 *.gz
 *.toc
-/cache
-/node_modules
-/out
 __pycache__
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+/broadcast
+
+# Dotenv file
+.env
