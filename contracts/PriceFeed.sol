@@ -10,7 +10,7 @@ import {PoolAddress} from "./utils/PoolAddress.sol";
  * @title PriceFeed
  * @author jacopo.eth <jacopo@slice.so>
  *
- * @notice General purpose price feed based on Uniswap V3.
+ * @notice Price feed to easily and efficiently get quotes from Uniswap V3 TWAP oracles.
  */
 contract PriceFeed is IPriceFeed {
   /// =================================

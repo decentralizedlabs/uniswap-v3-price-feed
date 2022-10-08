@@ -1,32 +1,43 @@
-# Uniswap V3 Price Feed
+# Uniswap V3 TWAP Price Feed
 
-**A general purpose TWAP oracle based on Uniswap V3**
+**Decentralized price feed to easily and efficiently get quotes from Uniswap V3 TWAP oracles**
 
-Uniswap V3 pools can be used as decentralized price feed oracles. However they have intrinsic limitations when used in some environments, for example:
+Uniswap V3 pools can be used as a decentralized price feed oracles. However they have intrinsic limitations, for example:
 
-- It's not possible to programmatically retrieve quotes for a currency pair, without knowing the pool fee;
+- It's not possible to programmatically retrieve quotes for a currency pair without knowing the reference pool in advance;
 - Since every currency pair has multiple pools, each with a different fee, it's possible to get a wrong quote by querying a pool with low liquidity;
-- Liquidity constantly varies in pools, so the main pool for a currency pair can change over time;
-- It can be challenging for contract developers to interact with Uniswap V3 efficiently.
+- Liquidity constantly varies in pools, so the most active pool for a currency pair can change over time;
+- Interacting with Uniswap V3 TWAP oracles can be challenging or expensive.
+
+The aim of this price feed is to solve these issues by leveraging the collaborative effort from the Ethereum community.
 
 ## Rationale
 
-This price feed is used by the [Slice protocol](https://slice.so) to provide dynamic pricing for products in any currency.
+Over sufficiently large time intervals, **harmonic mean liquidity (TWAL) can be used to programmatically determine the main / most traded pool for a currency pair**, among the ones with various fees.
 
-Slice will constantly update the pools it interacts with, however the usefulness of the price feed increases with the number of users in the Ethereum ecosystem who benefit from it.
+> You can learn more about TWAL and Liquidity Oracles in the [Uniswap V3 Core whitepaper](https://uniswap.org/whitepaper-v3.pdf).
+
+The price feed relies on the distributed effort of users to keep updated the reference for the main pool for each currency pair. This is greatly facilitated by `getUpdatedPool` and `getQuoteAndUpdatePool` which allow interacting with the feed while updating stale pools at the same time.
+
+At the same time anyone can use `getPool` to retrieve the current main pool for a currency pair, or `getQuote` to efficiently get a time-weighted quote by simply specifying the `currency addresses`, `the amount of base currency to convert` and the desired `twap interval`.
+
+This design ultimately makes it safe, easy and efficient to interact with TWAP oracles or integrate them into other smart contracts.
+
+> The price feed will soon be used by the [Slice protocol](https://slice.so) to provide dynamic pricing for products in any ERC20 currency, periodically updating the pools it interacts with. Usage from more parties is encouraged to increase the usefulness and efficiency of the price feed for the whole Ethereum ecosystem.
 
 ## Functions
 
-- `getPool`: Get the main pool for each currency pair from contract storage
-- `getQuote`: Get quote given a currency pair and amount
+- `getPool`: Get the latest updated pool for a currency pair
+- `getQuote`: Get quote from the latest updated pool for a currency pair
 - `updatePool`: Update the main pool for a currency pair
-- `getUpdatedPool`: Get the pool for a currency pair, and update it if necessary
-- `getQuoteAndUpdatePool`: Get quote given a currency pair and amount, and update pool if necessary
+- `getUpdatedPool`: Get the main pool for a currency pair, and update it if deemed stale
+- `getQuoteAndUpdatePool`: Get quote given a currency pair and amount, and update main pool if deemed stale
 
 See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 
 ## Gotchas
 
+- Quotes do not trigger reverts, so any returned quote amount equal to 0 should be handled appropriately from the caller.
 - Quotes represent a time-weighted average price for a currency in a certain amount of time (see [TWAP oracles](https://docs.uniswap.org/protocol/concepts/V3-overview/oracle)). As such they don&apos;t exactly correspond to the amount displayed during a swap on Uniswap, but they're better suited to estimate the value of a currency.
 - While Uniswap V3 TWAP oracles are much more resilient to attacks than V2 pools, an incentivised party may still be able to manipulate the price significantly. This is especially valid for low liquidity pools.
 - The price feed doesn&apos;t impose a specific TWAP interval, so care should be taken by the caller in choosing an appropriate value.

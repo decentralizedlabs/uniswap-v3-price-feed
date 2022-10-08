@@ -1,14 +1,14 @@
 {
-  "name": "vrgdas",
+  "name": "twap-price-feed",
   "license": "MIT",
   "version": "1.0.0",
-  "description": "Variable Rate Gradual Dutch Auctions.",
+  "description": "A price feed to easily and efficiently get quotes from Uniswap V3 TWAP oracles.",
   "files": [
-    "src/**/*.sol"
+    "contracts/**/*.sol"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/transmissions11/VRGDAs.git"
+    "url": "git+https://github.com/slice-so/uniswap-v3-price-feed.git"
   },
   "devDependencies": {
     "prettier": "^2.3.1",
