@@ -15,10 +15,7 @@ interface IPriceFeed {
       uint48 lastUpdatedTimestamp
     );
 
-  function getPool(address tokenA, address tokenB)
-    external
-    view
-    returns (PoolData memory pool);
+  function getPool(address tokenA, address tokenB) external view returns (PoolData memory pool);
 
   function getQuote(
     uint128 baseAmount,
@@ -43,5 +40,5 @@ interface IPriceFeed {
 
   function updatePool(address tokenA, address tokenB)
     external
-    returns (PoolData memory highestLiquidityPool);
+    returns (PoolData memory highestLiquidityPool, int56[] memory tickCumulatives);
 }

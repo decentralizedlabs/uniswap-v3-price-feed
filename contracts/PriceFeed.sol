@@ -21,11 +21,24 @@ contract PriceFeed is IPriceFeed {
   event PoolUpdated(PoolData pool);
 
   /// =================================
+  /// ============ Errors =============
+  /// =================================
+
+  /// Thrown when a quote is requested with secondsAgo == 0
+  error InvalidTWAPInterval();
+
+  /// =================================
   /// ======= Immutable Storage =======
   /// =================================
 
+  /// TWAP interval used when updating pools
+  uint24 public constant UPDATE_INTERVAL = 30 minutes;
+  /// UPDATE_INTERVAL multiplied by 2**160
+  uint192 private constant UPDATE_INTERVAL_X160 = UPDATE_INTERVAL << 160;
+  /// UPDATE_INTERVAL formatted to secondsAgo array
+  uint32[] private UPDATE_SECONDS_AGO = [UPDATE_INTERVAL, 0];
   /// UniswapV3Pool possible fee amounts
-  uint24[] private fees = [10000, 3000, 500, 100];
+  uint24[] private FEES = [10000, 3000, 500, 100];
   /// UniswapV3Factory contract address
   address public immutable uniswapV3Factory;
 
@@ -49,7 +62,7 @@ contract PriceFeed is IPriceFeed {
   /// =================================
 
   /**
-   * @notice Retrieves pool given tokenA and tokenB, regardless of order.
+   * @notice Retrieves pool given tokenA and tokenB regardless of order.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @return pool address, fee and last edit timestamp.
@@ -63,12 +76,15 @@ contract PriceFeed is IPriceFeed {
   /**
    * @notice Get the time-weighted quote of `quoteToken` received in exchange for a `baseAmount`
    * of `baseToken`, from the pool with highest liquidity, based on a `secondsAgo` twap interval.
-   * Requirement: secondsAgo must be greater than 0.
+   * Requirement: `secondsAgo` must be greater than 0.
    * @param baseAmount Amount of baseToken to be converted
    * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
    * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
    * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
+   *
+   * Note: If a pool does not exist or a valid quote is not returned execution will not revert and
+   * `quoteAmount` will be 0.
    */
   function getQuote(
     uint128 baseAmount,
@@ -91,11 +107,11 @@ contract PriceFeed is IPriceFeed {
   }
 
   /**
-   * @notice Retrieves pool given tokenA and tokenB, regardless of order, and updates pool if necessary.
+   * @notice Retrieves pool given tokenA and tokenB regardless of order, and updates pool if necessary.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
-   * @return pool address, fee and last edit timestamp.
+   * @return pool address, fee and last edit timestamp
    *
    * Note: Set updateInterval to 0 to always trigger an update, or to block.timestamp to only update if a pool
    * has not been stored yet.
@@ -106,7 +122,10 @@ contract PriceFeed is IPriceFeed {
     uint256 updateInterval
   ) public returns (PoolData memory pool) {
     // Shortcircuit the case where we need to update
-    if (updateInterval == 0) return updatePool(tokenA, tokenB);
+    if (updateInterval == 0) {
+      (pool, ) = updatePool(tokenA, tokenB);
+      return pool;
+    }
 
     pool = getPool(tokenA, tokenB);
 
@@ -115,12 +134,12 @@ contract PriceFeed is IPriceFeed {
       pool.poolAddress == address(0) ||
       pool.lastUpdatedTimestamp + updateInterval <= block.timestamp
     ) {
-      pool = updatePool(tokenA, tokenB);
+      (pool, ) = updatePool(tokenA, tokenB);
     }
   }
 
   /**
-   * @notice Get the time-weighted quote of `quoteToken`, and updates the pool in case there is no pool stored.
+   * @notice Get the time-weighted quote of `quoteToken`, and updates the pool when there is no pool stored.
    * @param baseAmount Amount of baseToken to be converted
    * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
@@ -128,6 +147,8 @@ contract PriceFeed is IPriceFeed {
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
    * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
    *
+   * Note: If a pool does not exist or a valid quote is not returned execution will not revert and
+   * `quoteAmount` will be 0.
    * Note: Set updateInterval to 0 to always trigger an update, or to block.timestamp to only update if a pool
    * has not been stored yet.
    */
@@ -138,10 +159,26 @@ contract PriceFeed is IPriceFeed {
     uint32 secondsAgo,
     uint256 updateInterval
   ) public returns (uint256 quoteAmount) {
-    address pool = getUpdatedPool(baseToken, quoteToken, updateInterval).poolAddress;
+    (PoolData memory pool, int56[] memory tickCumulatives) = _getUpdatedPoolWithTicks(
+      baseToken,
+      quoteToken,
+      updateInterval
+    );
 
-    if (pool != address(0)) {
-      int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
+    if (pool.poolAddress != address(0)) {
+      int24 arithmeticMeanTick;
+
+      // If _getUpdatedPoolWithTicks returned non null tickCumulatives
+      if (tickCumulatives[0] != tickCumulatives[1]) {
+        // Calculate arithmeticMeanTick from tickCumulatives
+        int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
+        arithmeticMeanTick = int24(tickCumulativesDelta / int56(uint56(secondsAgo)));
+        // Always round to negative infinity
+        if (tickCumulativesDelta < 0 && (tickCumulativesDelta % int56(uint56(secondsAgo)) != 0))
+          arithmeticMeanTick--;
+      } else {
+        arithmeticMeanTick = _getArithmeticMeanTick(pool.poolAddress, secondsAgo);
+      }
 
       quoteAmount = OracleLibrary.getQuoteAtTick(
         arithmeticMeanTick,
@@ -158,10 +195,11 @@ contract PriceFeed is IPriceFeed {
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @return highestLiquidityPool Pool with the highest harmonicMeanLiquidity
+   * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
    */
   function updatePool(address tokenA, address tokenB)
     public
-    returns (PoolData memory highestLiquidityPool)
+    returns (PoolData memory highestLiquidityPool, int56[] memory tickCumulatives)
   {
     // Order token addresses
     (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
@@ -170,26 +208,25 @@ contract PriceFeed is IPriceFeed {
     uint256 highestLiquidity;
 
     // Add reference for values used in loop
-    uint24[] memory fees_ = fees;
     address poolAddress;
     uint256 harmonicMeanLiquidity;
     for (uint256 i; i < 4; ) {
       // Compute pool address
       poolAddress = PoolAddress.computeAddress(
         uniswapV3Factory,
-        PoolAddress.PoolKey(token0, token1, fees_[i])
+        PoolAddress.PoolKey(token0, token1, FEES[i])
       );
 
       // If pool has been deployed
-      if (poolAddress.code.length > 0) {
+      if (poolAddress.code.length != 0) {
         // Get 30-min harmonic mean liquidity
-        harmonicMeanLiquidity = _getHarmonicMeanLiquidity(poolAddress, 1800);
+        (harmonicMeanLiquidity, tickCumulatives) = _getHarmonicMeanLiquidity(poolAddress);
 
         // If liquidity is higher than the previously stored one
         if (harmonicMeanLiquidity > highestLiquidity) {
           // Update reference values
           highestLiquidity = harmonicMeanLiquidity;
-          highestLiquidityPool = PoolData(poolAddress, fees_[i], uint48(block.timestamp));
+          highestLiquidityPool = PoolData(poolAddress, FEES[i], uint48(block.timestamp));
         }
       }
 
@@ -205,44 +242,48 @@ contract PriceFeed is IPriceFeed {
   }
 
   /**
+   * @notice Same as `getUpdatedPool` but also returns tickCumulatives if an update is triggered.
+   * Used internally in `getQuoteAndUpdatePool` to avoid an unnecessary call to the pool.
+   * @param tokenA Address of one of the ERC20 token contract in the pool
+   * @param tokenB Address of the other ERC20 token contract in the pool
+   * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
+   * @return pool address, fee and last edit timestamp
+   * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
+   */
+  function _getUpdatedPoolWithTicks(
+    address tokenA,
+    address tokenB,
+    uint256 updateInterval
+  ) private returns (PoolData memory pool, int56[] memory tickCumulatives) {
+    // Shortcircuit the case where we need to update
+    if (updateInterval == 0) return updatePool(tokenA, tokenB);
+
+    pool = getPool(tokenA, tokenB);
+
+    // If no pool is stored or updateInterval has passed since lastUpdatedTimestamp
+    if (
+      pool.poolAddress == address(0) ||
+      pool.lastUpdatedTimestamp + updateInterval <= block.timestamp
+    ) {
+      (pool, tickCumulatives) = updatePool(tokenA, tokenB);
+    }
+  }
+
+  /**
    * @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `harmonicMeanLiquidity`.
    * @param pool Address of the pool that we want to observe
    * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted means
    * @return arithmeticMeanTick The arithmetic mean tick from (block.timestamp - secondsAgo) to block.timestamp
+   *
+   * @dev Silently handles errors in `uniswapV3Pool.observe` to prevent reverts.
    */
   function _getArithmeticMeanTick(address pool, uint32 secondsAgo)
     private
     view
     returns (int24 arithmeticMeanTick)
   {
-    require(secondsAgo != 0, "BP");
+    if (secondsAgo == 0) revert InvalidTWAPInterval();
 
-    uint32[] memory secondsAgos = new uint32[](2);
-    secondsAgos[0] = secondsAgo;
-    secondsAgos[1] = 0;
-
-    (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(secondsAgos);
-
-    int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
-
-    arithmeticMeanTick = int24(tickCumulativesDelta / int56(uint56(secondsAgo)));
-    // Always round to negative infinity
-    if (tickCumulativesDelta < 0 && (tickCumulativesDelta % int56(uint56(secondsAgo)) != 0))
-      arithmeticMeanTick--;
-  }
-
-  /**
-   * @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `arithmeticMeanTick`.
-   * @dev Silently handles OLD errors in `uniswapV3Pool.observe` to avoid reverting `updatePool`.
-   * @param pool Address of the pool that we want to observe
-   * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted means
-   * @return harmonicMeanLiquidity The harmonic mean liquidity from (block.timestamp - secondsAgo) to block.timestamp
-   */
-  function _getHarmonicMeanLiquidity(address pool, uint32 secondsAgo)
-    private
-    view
-    returns (uint128 harmonicMeanLiquidity)
-  {
     uint32[] memory secondsAgos = new uint32[](2);
     secondsAgos[0] = secondsAgo;
     secondsAgos[1] = 0;
@@ -254,8 +295,42 @@ contract PriceFeed is IPriceFeed {
 
     // If observe hasn't reverted
     if (success) {
-      // Decode `secondsPerLiquidityCumulativeX128s` from returned data
-      (, uint160[] memory secondsPerLiquidityCumulativeX128s) = abi.decode(
+      // Decode `tickCumulatives` from returned data
+      (int56[] memory tickCumulatives, ) = abi.decode(data, (int56[], uint160[]));
+
+      int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
+
+      arithmeticMeanTick = int24(tickCumulativesDelta / int56(uint56(secondsAgo)));
+      // Always round to negative infinity
+      if (tickCumulativesDelta < 0 && (tickCumulativesDelta % int56(uint56(secondsAgo)) != 0))
+        arithmeticMeanTick--;
+    }
+  }
+
+  /**
+   * @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `arithmeticMeanTick` and
+   * defaulting to `UPDATE_INTERVAL` seconds ago.
+   * @param pool Address of the pool that we want to observe
+   * @return harmonicMeanLiquidity The harmonic mean liquidity from (block.timestamp - secondsAgo) to block.timestamp
+   * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
+   *
+   * @dev Silently handles errors in `uniswapV3Pool.observe` to prevent reverts.
+   */
+  function _getHarmonicMeanLiquidity(address pool)
+    private
+    view
+    returns (uint128 harmonicMeanLiquidity, int56[] memory tickCumulatives)
+  {
+    // Call uniswapV3Pool.observe
+    (bool success, bytes memory data) = pool.staticcall(
+      abi.encodeWithSelector(0x883bdbfd, UPDATE_SECONDS_AGO)
+    );
+
+    // If observe hasn't reverted
+    if (success) {
+      uint160[] memory secondsPerLiquidityCumulativeX128s;
+      // Decode `tickCumulatives` and `secondsPerLiquidityCumulativeX128s` from returned data
+      (tickCumulatives, secondsPerLiquidityCumulativeX128s) = abi.decode(
         data,
         (int56[], uint160[])
       );
@@ -263,10 +338,8 @@ contract PriceFeed is IPriceFeed {
       uint160 secondsPerLiquidityCumulativesDelta = secondsPerLiquidityCumulativeX128s[1] -
         secondsPerLiquidityCumulativeX128s[0];
 
-      // We are multiplying here instead of shifting to ensure that harmonicMeanLiquidity doesn't overflow uint128
-      uint192 secondsAgoX160 = uint192(secondsAgo) * type(uint160).max;
       harmonicMeanLiquidity = uint128(
-        secondsAgoX160 / (uint192(secondsPerLiquidityCumulativesDelta) << 32)
+        UPDATE_INTERVAL_X160 / (uint192(secondsPerLiquidityCumulativesDelta) << 32)
       );
     }
   }
