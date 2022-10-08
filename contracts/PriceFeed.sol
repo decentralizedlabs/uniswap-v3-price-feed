@@ -2,9 +2,9 @@
 pragma solidity >=0.8.0;
 
 import "./interfaces/IPriceFeed.sol";
-import { OracleLibrary } from "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
-import { IUniswapV3Pool } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import { PoolAddress } from "./utils/PoolAddress.sol";
+import {OracleLibrary} from "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
+import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import {PoolAddress} from "./utils/PoolAddress.sol";
 
 /**
  * @title PriceFeed
@@ -24,9 +24,9 @@ contract PriceFeed is IPriceFeed {
   /// ======= Immutable Storage =======
   /// =================================
 
-  // UniswapV3Pool possible fee amounts
+  /// UniswapV3Pool possible fee amounts
   uint24[] private fees = [10000, 3000, 500, 100];
-  // UniswapV3Factory contract address
+  /// UniswapV3Factory contract address
   address public immutable uniswapV3Factory;
 
   /// =================================
@@ -48,27 +48,23 @@ contract PriceFeed is IPriceFeed {
   /// =========== Functions ===========
   /// =================================
 
-  /** @notice Retrieves pool given tokenA and tokenB, regardless of order.
+  /**
+   * @notice Retrieves pool given tokenA and tokenB, regardless of order.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @return pool address, fee and last edit timestamp.
    */
-  function getPool(address tokenA, address tokenB)
-    public
-    view
-    returns (PoolData memory pool)
-  {
-    (address token0, address token1) = tokenA < tokenB
-      ? (tokenA, tokenB)
-      : (tokenB, tokenA);
+  function getPool(address tokenA, address tokenB) public view returns (PoolData memory pool) {
+    (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
     pool = pools[token0][token1];
   }
 
-  /** @notice Get the time-weighted quote of `quoteToken` received in exchange for a `baseAmount`
+  /**
+   * @notice Get the time-weighted quote of `quoteToken` received in exchange for a `baseAmount`
    * of `baseToken`, from the pool with highest liquidity, based on a `secondsAgo` twap interval.
    * Requirement: secondsAgo must be greater than 0.
-   * @param baseAmount Amount of token to be converted
+   * @param baseAmount Amount of baseToken to be converted
    * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
    * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
@@ -94,7 +90,8 @@ contract PriceFeed is IPriceFeed {
     }
   }
 
-  /** @notice Retrieves pool given tokenA and tokenB, regardless of order, and updates pool if necessary.
+  /**
+   * @notice Retrieves pool given tokenA and tokenB, regardless of order, and updates pool if necessary.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
@@ -122,8 +119,9 @@ contract PriceFeed is IPriceFeed {
     }
   }
 
-  /** @notice Get the time-weighted quote of `quoteToken`, and updates the pool in case there is no pool stored.
-   * @param baseAmount Amount of token to be converted
+  /**
+   * @notice Get the time-weighted quote of `quoteToken`, and updates the pool in case there is no pool stored.
+   * @param baseAmount Amount of baseToken to be converted
    * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
    * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
@@ -140,8 +138,7 @@ contract PriceFeed is IPriceFeed {
     uint32 secondsAgo,
     uint256 updateInterval
   ) public returns (uint256 quoteAmount) {
-    address pool = getUpdatedPool(baseToken, quoteToken, updateInterval)
-      .poolAddress;
+    address pool = getUpdatedPool(baseToken, quoteToken, updateInterval).poolAddress;
 
     if (pool != address(0)) {
       int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
@@ -155,7 +152,9 @@ contract PriceFeed is IPriceFeed {
     }
   }
 
-  /** @notice Updates stored pool with the one having the highest liquidity.
+  /**
+   * @notice Updates stored pool with the most traded one in the last 30 minutes.
+   * The most traded pool is considered to be the one with the highest TWAL.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @return highestLiquidityPool Pool with the highest harmonicMeanLiquidity
@@ -165,9 +164,7 @@ contract PriceFeed is IPriceFeed {
     returns (PoolData memory highestLiquidityPool)
   {
     // Order token addresses
-    (address token0, address token1) = tokenA < tokenB
-      ? (tokenA, tokenB)
-      : (tokenB, tokenA);
+    (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
     // Add reference for highest pool and liquidity value
     uint256 highestLiquidity;
@@ -192,11 +189,7 @@ contract PriceFeed is IPriceFeed {
         if (harmonicMeanLiquidity > highestLiquidity) {
           // Update reference values
           highestLiquidity = harmonicMeanLiquidity;
-          highestLiquidityPool = PoolData(
-            poolAddress,
-            fees_[i],
-            uint48(block.timestamp)
-          );
+          highestLiquidityPool = PoolData(poolAddress, fees_[i], uint48(block.timestamp));
         }
       }
 
@@ -211,10 +204,12 @@ contract PriceFeed is IPriceFeed {
     emit PoolUpdated(highestLiquidityPool);
   }
 
-  /// @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `harmonicMeanLiquidity`.
-  /// @param pool Address of the pool that we want to observe
-  /// @param secondsAgo Number of seconds in the past from which to calculate the time-weighted means
-  /// @return arithmeticMeanTick The arithmetic mean tick from (block.timestamp - secondsAgo) to block.timestamp
+  /**
+   * @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `harmonicMeanLiquidity`.
+   * @param pool Address of the pool that we want to observe
+   * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted means
+   * @return arithmeticMeanTick The arithmetic mean tick from (block.timestamp - secondsAgo) to block.timestamp
+   */
   function _getArithmeticMeanTick(address pool, uint32 secondsAgo)
     private
     view
@@ -226,27 +221,23 @@ contract PriceFeed is IPriceFeed {
     secondsAgos[0] = secondsAgo;
     secondsAgos[1] = 0;
 
-    (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(
-      secondsAgos
-    );
+    (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(secondsAgos);
 
     int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
 
-    arithmeticMeanTick = int24(
-      tickCumulativesDelta / int56(uint56(secondsAgo))
-    );
+    arithmeticMeanTick = int24(tickCumulativesDelta / int56(uint56(secondsAgo)));
     // Always round to negative infinity
-    if (
-      tickCumulativesDelta < 0 &&
-      (tickCumulativesDelta % int56(uint56(secondsAgo)) != 0)
-    ) arithmeticMeanTick--;
+    if (tickCumulativesDelta < 0 && (tickCumulativesDelta % int56(uint56(secondsAgo)) != 0))
+      arithmeticMeanTick--;
   }
 
-  /// @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `arithmeticMeanTick`.
-  /// @dev Silently handles OLD errors in `uniswapV3Pool.observe` to avoid reverting `updatePool`.
-  /// @param pool Address of the pool that we want to observe
-  /// @param secondsAgo Number of seconds in the past from which to calculate the time-weighted means
-  /// @return harmonicMeanLiquidity The harmonic mean liquidity from (block.timestamp - secondsAgo) to block.timestamp
+  /**
+   * @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `arithmeticMeanTick`.
+   * @dev Silently handles OLD errors in `uniswapV3Pool.observe` to avoid reverting `updatePool`.
+   * @param pool Address of the pool that we want to observe
+   * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted means
+   * @return harmonicMeanLiquidity The harmonic mean liquidity from (block.timestamp - secondsAgo) to block.timestamp
+   */
   function _getHarmonicMeanLiquidity(address pool, uint32 secondsAgo)
     private
     view
@@ -269,9 +260,8 @@ contract PriceFeed is IPriceFeed {
         (int56[], uint160[])
       );
 
-      uint160 secondsPerLiquidityCumulativesDelta = secondsPerLiquidityCumulativeX128s[
-          1
-        ] - secondsPerLiquidityCumulativeX128s[0];
+      uint160 secondsPerLiquidityCumulativesDelta = secondsPerLiquidityCumulativeX128s[1] -
+        secondsPerLiquidityCumulativeX128s[0];
 
       // We are multiplying here instead of shifting to ensure that harmonicMeanLiquidity doesn't overflow uint128
       uint192 secondsAgoX160 = uint192(secondsAgo) * type(uint160).max;
