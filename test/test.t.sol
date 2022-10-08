@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8;
 
-import { DSTestPlus } from "solmate/test/utils/DSTestPlus.sol";
-import { console2 } from "forge-std/console2.sol";
-import { PriceFeed } from "../contracts/PriceFeed.sol";
-import { MockERC20 } from "./mocks/MockERC20.sol";
-import { MockUniswapV3Factory } from "./mocks/MockUniswapV3Factory.sol";
+import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
+import {console2} from "forge-std/console2.sol";
+import {PriceFeed} from "../contracts/PriceFeed.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
+import {MockUniswapV3Factory} from "./mocks/MockUniswapV3Factory.sol";
 
 uint24 constant poolFee = 3000;
 address constant a1 = address(1);
@@ -36,12 +36,7 @@ contract BaseTest is DSTestPlus {
   // tickspacing = 60
 
   function testGetQuoteNoPool() public {
-    uint256 quote = priceFeed.getQuote(
-      1e18,
-      address(token1),
-      address(token2),
-      1800
-    );
+    uint256 quote = priceFeed.getQuote(1e18, address(token1), address(token2), 1800);
     assertEq(quote, 0);
   }
 
