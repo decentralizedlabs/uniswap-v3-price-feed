@@ -23,4 +23,4 @@
 	url = https://github.com/Uniswap/v3-periphery
 [submodule "lib/create3-factory"]
 	path = lib/create3-factory
-	url = https://github.com/ZeframLou/create3-factory
+	url = https://github.com/zeframlou/create3-factory
