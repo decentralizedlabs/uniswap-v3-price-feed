@@ -13,12 +13,14 @@ contract DeployScript is Script {
       0x9fBB3DF7C40Da2e5A0dE984fFE2CCB7C47cd0ABf
     );
 
+    bytes32 salt = keccak256(vm.envBytes("SALT"));
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+
     vm.startBroadcast(deployerPrivateKey);
 
     priceFeed = PriceFeed(
       create3Factory.deploy(
-        keccak256("test6"),
+        salt,
         bytes.concat(type(PriceFeed).creationCode, abi.encode(uniswapV3Factory))
       )
     );
