@@ -32,9 +32,9 @@ contract PriceFeed is IPriceFeed {
   /// =================================
 
   /// TWAP interval used when updating pools
-  uint24 public constant UPDATE_INTERVAL = 30 minutes;
+  uint32 public constant UPDATE_INTERVAL = 30 minutes;
   /// UPDATE_INTERVAL multiplied by 2**160
-  uint192 private constant UPDATE_INTERVAL_X160 = UPDATE_INTERVAL << 160;
+  uint192 private constant UPDATE_INTERVAL_X160 = uint192(UPDATE_INTERVAL) << 160;
   /// UPDATE_INTERVAL formatted to secondsAgo array
   uint32[] private UPDATE_SECONDS_AGO = [UPDATE_INTERVAL, 0];
   /// UniswapV3Pool possible fee amounts
