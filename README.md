@@ -46,10 +46,10 @@ See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 
 ## Deployments
 
-`PriceFeed` has been deployed to `0x223634c412e232465a9Ae479B488A2Fd7088eb4b` on the following networks:
+`PriceFeed` has been deployed to `0xa706E21E91218E8F83B49C02B26a1cEdC153E586` on the following networks:
 
-- [Ethereum Mainnet](https://etherscan.io/address/0x223634c412e232465a9Ae479B488A2Fd7088eb4b)
-- [Ethereum Goerli Testnet](https://goerli.etherscan.io/address/0x223634c412e232465a9Ae479B488A2Fd7088eb4b)
+- [Ethereum Mainnet](https://etherscan.io/address/0xa706E21E91218E8F83B49C02B26a1cEdC153E586)
+- [Ethereum Goerli Testnet](https://goerli.etherscan.io/address/0xa706E21E91218E8F83B49C02B26a1cEdC153E586)
 
 ## Support the project
 
