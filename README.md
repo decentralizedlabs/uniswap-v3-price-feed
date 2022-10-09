@@ -55,15 +55,15 @@ See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 
 You can support the project by donating to either its slicer or Juicebox treasury.
 
-### [Price Feed Slicer](...)
+### [Price Feed Slicer](https://slice.so/slicer/22)
 
-By sending ETH to the slicer address (0x...) you donate to the contributors of the project proportionally to their contributions. In addition, you&apos;ll appear as sponsor in the slicer page and potentially receive other rewards over time.
+By sending ETH to the slicer address `0x83c36BED51b6de81986390b6e64aDa045694E857` you're supporting the contributors of the project. In addition, you&apos;ll appear as sponsor in the slicer page and potentially receive other rewards over time.
 
-In fact **ownership over the slicer is distributed to the contributors of this repository, proportionally to their contributions**. You can check the ownership distribution in the [slicer page](https://slice.so/slicer/...?view=owners), or the specifics of each slice mint on each merged PR.
+In fact **ownership over the slicer is distributed to the contributors of this repository, proportionally to their contributions**. You can check the ownership distribution in the [slicer page](https://slice.so/slicer/22?view=owners), or the specifics of each slice mint on each merged PR.
 
-### [Juicebox Treasury](...)
+### [Juicebox Treasury](https://juicebox.money/v2/p/264)
 
-Any funds sent to our [Juicebox treasury](...) are also forwarded to the slicer. The only difference is that instead of appearing as a sponsor on the slicer page you&apos;ll receive ERC20 tokens in exchange for your support.
+Funds sent to the [Juicebox treasury](https://juicebox.money/v2/p/264) are forwarded to the slicer. The only difference is that instead of appearing as a sponsor on the slicer page you&apos;ll receive tokens in exchange for your support.
 
 ## Contribute
 
@@ -71,8 +71,8 @@ This project uses [Foundry](https://github.com/foundry-rs/foundry) as the develo
 
 ### Merge to earn
 
-When a PR is merged, **contributors receive an amount of slices entitling them to a part of the whole donations / earnings of the project**.
+When a PR is merged, **contributors receive slices granting them a part of the future donations / earnings of the project**.
 
-The amount of slices to be issued can be discussed on github or elsewhere, and can eventually be proposed by the contributors or mainteiners. Once the PR is merged, the slices are minted and the amount is recorded in the PR discussion.
+Discussion on the slices to be issued can happen on Github or elsewhere. Once the PR is merged, the agreed amount of slices is minted to all contributors and maintainers involved.
 
 Learn how Slice works on the [website](https://slice.so) or ask questions on [Discord](https://discord.gg/c7puDHjgMU).
