@@ -5,6 +5,7 @@ import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
 import {console2} from "forge-std/console2.sol";
 import {PriceFeed} from "../contracts/PriceFeed.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
+import {MockPool} from "./mocks/MockPool.sol";
 import {MockUniswapV3Factory} from "./mocks/MockUniswapV3Factory.sol";
 
 uint24 constant poolFee = 3000;
@@ -15,6 +16,7 @@ contract BaseTest is DSTestPlus {
   MockUniswapV3Factory uniswapV3Factory;
   MockERC20 token1;
   MockERC20 token2;
+  MockPool mockPool;
 
   // UniswapV3Pool pool;
 
@@ -23,6 +25,9 @@ contract BaseTest is DSTestPlus {
     priceFeed = new PriceFeed(address(uniswapV3Factory));
     token1 = new MockERC20();
     token2 = new MockERC20();
+    mockPool = new MockPool();
+
+    hevm.etch(0x6eB74AdEc4568270A46E31702a5c757a10c722e0, address(mockPool).code);
 
     // pool = UniswapV3Pool(
     //   uniswapV3Factory.createPool(address(token1), address(token2), poolFee)
