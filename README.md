@@ -2,6 +2,8 @@
 
 #### Decentralized price feed based on Uniswap V3 TWAP oracles
 
+![Price feed code snippet](public/1.png)
+
 ---
 
 Uniswap V3 pools can be used as decentralized price feed oracles. However they have intrinsic limitations, for example:
@@ -69,7 +71,7 @@ Funds sent to the [Juicebox treasury](https://juicebox.money/v2/p/264) are forwa
 
 This project uses [Foundry](https://github.com/foundry-rs/foundry) as the development framework.
 
-### Merge-to-earn
+### Merge-to-own
 
 When a PR is merged, **contributors receive slices granting them a part of the future donations / earnings of the project**.
 
