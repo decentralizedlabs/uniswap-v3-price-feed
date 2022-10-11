@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Mint slices
         id: hello
-        uses: Dom-Mac/merge-to-earn@v3.1.7
+        uses: Dom-Mac/merge-to-earn@v3.1.8
         with:
           slicer: 0x000
           alchemy_api_key: ${{ secrets.ALCHEMY_API_KEY }}
