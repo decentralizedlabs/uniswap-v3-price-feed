@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Mint slices
         id: hello
-        uses: Dom-Mac/merge-to-earn@v1.6
+        uses: Dom-Mac/merge-to-earn@v1.7
         with:
           slicer: 0x000
           address: ${{ inputs.address }}
