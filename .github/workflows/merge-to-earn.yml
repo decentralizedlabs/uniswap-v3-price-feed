@@ -16,11 +16,11 @@ jobs:
     name: Merge to Earn | Mint slices
     steps:
       - name: Mint slices
-        id: hello
-        uses: Dom-Mac/merge-to-earn@v3.1.9
+        id: mint
+        uses: Dom-Mac/merge-to-earn@v3.2.0
         with:
-          slicer: 0x000
+          slicer: 0x775e6c6a298b704f95500e752cf5b649fb3bdd73
           alchemy_api_key: ${{ secrets.ALCHEMY_API_KEY }}
       # Use the output from the `hello` step
       # - name: Get the output time
-      #   run: echo "The time was ${{ steps.hello.outputs.time }}"
+      #   run: echo "The time was ${{ steps.mint.outputs.time }}"
