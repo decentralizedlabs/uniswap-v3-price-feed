@@ -1,15 +1,25 @@
-on: [push]
+on:
+  workflow_dispatch:
+    inputs:
+      address:
+        required: true
+        description: Address or ENS
+      slices:
+        type: number
+        required: true
 
 jobs:
   hello_world_job:
     runs-on: ubuntu-latest
     name: A job to say hello
     steps:
-      - name: Hello world action step
+      - name: Mint slices
         id: hello
         uses: Dom-Mac/merge-to-earn@v1.5
         with:
-          who-to-greet: "Domingo the Octocat"
+          slicer: 0x000
+          address: ${{ inputs.address }}
+          slices: ${{ inputs.slices }}
       # Use the output from the `hello` step
-      - name: Get the output time
-        run: echo "The time was ${{ steps.hello.outputs.time }}"
+      # - name: Get the output time
+      #   run: echo "The time was ${{ steps.hello.outputs.time }}"
