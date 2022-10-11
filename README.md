@@ -13,7 +13,7 @@ Uniswap V3 pools can be used as decentralized price feed oracles. However they h
 - Liquidity constantly varies in pools, so the most active pool for a currency pair can change over time;
 - Interacting with Uniswap V3 TWAP oracles can be challenging or expensive.
 
-The aim of this price feed is to solve these issues while providing reliable and efficient quotes the more users benefit from it.
+The aim of this price feed is to solve these issues while providing increasingly reliable and efficient quotes the more users benefit from it.
 
 ## Rationale
 
@@ -69,12 +69,12 @@ Funds sent to the [Juicebox treasury](https://juicebox.money/v2/p/264) are forwa
 
 ## Contribute
 
-This project uses [Foundry](https://github.com/foundry-rs/foundry) as the development framework.
+This project uses [Foundry](https://github.com/foundry-rs/foundry) as development framework.
 
 ### Merge-to-own
 
 When a PR is merged, **contributors receive slices granting them a part of the future donations / earnings of the project**.
 
-Discussion on the slices to be issued can happen on Github or elsewhere. Once the PR is merged, the agreed amount of slices is minted to all contributors and maintainers involved.
+Discussion on the slices to be issued can happen on Github or elsewhere. Once the PR is merged, the agreed amount of slices is minted to all contributors involved by the [gnosis safe](https://etherscan.io/address/0x71e1c244eF17516bcD1FA65db74F8F4f397e9097) (owned by maintainers).
 
 Learn how Slice works on the [website](https://slice.so) or ask questions on [Discord](https://discord.gg/c7puDHjgMU).
