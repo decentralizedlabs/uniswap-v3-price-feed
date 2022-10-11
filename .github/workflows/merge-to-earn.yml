@@ -17,11 +17,9 @@ jobs:
     steps:
       - name: Mint slices
         id: hello
-        uses: Dom-Mac/merge-to-earn@v2.1
+        uses: Dom-Mac/merge-to-earn@v2.2
         with:
           slicer: 0x000
-          address: ${{ inputs.address }}
-          slices: ${{ inputs.slices }}
       # Use the output from the `hello` step
       # - name: Get the output time
       #   run: echo "The time was ${{ steps.hello.outputs.time }}"
