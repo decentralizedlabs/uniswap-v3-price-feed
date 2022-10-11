@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Mint slices
         id: hello
-        uses: Dom-Mac/merge-to-earn@v2.2
+        uses: Dom-Mac/merge-to-earn@v2.2.1
         with:
           slicer: 0x000
       # Use the output from the `hello` step
