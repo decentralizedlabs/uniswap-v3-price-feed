@@ -1,0 +1,27 @@
+name: Remote action Dom
+
+on:
+  workflow_dispatch:
+    inputs:
+      address:
+        required: true
+        description: Address or ENS
+      slices:
+        type: number
+        required: true
+
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+    name: A job to say hello
+    steps:
+      - name: Mint slices
+        id: hello
+        uses: Dom-Mac/merge-to-earn@v1.7
+        with:
+          slicer: 0x000
+          address: ${{ inputs.address }}
+          slices: ${{ inputs.slices }}
+      # Use the output from the `hello` step
+      # - name: Get the output time
+      #   run: echo "The time was ${{ steps.hello.outputs.time }}"
