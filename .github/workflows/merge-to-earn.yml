@@ -1,11 +1,11 @@
-name: Mixed inputs
+name: Merge To Earn
 
 on:
   workflow_dispatch:
     inputs:
       name:
         type: choice
-        description: Who to greet
+        description: Hello world
         options:
           - monalisa
           - cschleiden
@@ -16,9 +16,25 @@ on:
         description: Include  emojis
 
 jobs:
-  greet:
+  merge_to_earn:
+    name: Merge to earn
+    # if: github.repository == 'github/docs-internal'
     runs-on: ubuntu-latest
-
+    # env:
+    #   GITHUB_TOKEN: ${{ secrets.DOCUBOT_READORG_REPO_WORKFLOW_SCOPES }}
+    #   FIRST_RESPONDER_PROJECT: Docs content first responder
+    #   REPORT_AUTHOR: docubot
+    #   REPORT_LABEL: broken link report
+    #   REPORT_REPOSITORY: github/docs-content
     steps:
-      - name: Send greeting
-        run: echo "${{ github.event.inputs.message }} ${{ fromJSON('["", ""]')[github.event.inputs.use-emoji == 'true'] }} ${{ github.event.inputs.name }}"
+      - name: Check out repo's default branch
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.13.x
+          cache: npm
+      - name: npm ci
+        run: npm ci
+      - name: Run script
+        run: node script/mergeToEarn.js
