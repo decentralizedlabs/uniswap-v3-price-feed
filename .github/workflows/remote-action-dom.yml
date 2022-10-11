@@ -1,3 +1,5 @@
+name: Remote action Dom
+
 on:
   workflow_dispatch:
     inputs:
