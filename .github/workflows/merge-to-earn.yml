@@ -1,14 +1,18 @@
 name: Merge To Earn
 
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       address:
+#         required: true
+#         description: Address or ENS
+#       slices:
+#         type: integer
+#         required: true
+
 on:
-  workflow_dispatch:
-    inputs:
-      address:
-        required: true
-        description: Address or ENS
-      slices:
-        type: integer
-        required: true
+  issue_comment:
+    type: [created, edited]
 
 jobs:
   mint_slices_job:
@@ -17,7 +21,7 @@ jobs:
     steps:
       - name: Mint slices
         id: mint
-        uses: Dom-Mac/merge-to-earn@v3.2.5
+        uses: Dom-Mac/merge-to-earn@v3.2.6
         with:
           slicer: "0x775e6c6a298b704f95500e752cf5b649fb3bdd73"
           alchemy_api_key: ${{ secrets.ALCHEMY_API_KEY }}
