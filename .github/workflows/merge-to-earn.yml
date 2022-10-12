@@ -15,11 +15,12 @@ jobs:
     steps:
       - name: Mint slices
         id: mint
-        uses: Dom-Mac/merge-to-earn@v3.3.3
+        uses: Dom-Mac/merge-to-earn@v3.3.4
         with:
           slicer: "0x775e6c6a298b704f95500e752cf5b649fb3bdd73"
           alchemy_api_key: ${{ secrets.ALCHEMY_API_KEY }}
-          event: "${{ github.event }}"
+      - name: Get the output time
+        run: echo ${{ toJSON(github.event) }}
 # Use the output from the `hello` step
 # - name: Get the output time
 #   run: echo "The time was ${{ steps.mint.outputs.time }}"
