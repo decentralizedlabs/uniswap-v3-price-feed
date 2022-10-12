@@ -10,7 +10,7 @@ on:
 jobs:
   mint_slices_job:
     name: Merge to Earn | Mint slicess
-    # if: github.event.issue.pull_request
+    if: github.event.issue.pull_request || github.event.pusher
     runs-on: ubuntu-latest
     steps:
       - name: Mint slices
@@ -19,8 +19,6 @@ jobs:
         with:
           slicer: "0x775e6c6a298b704f95500e752cf5b649fb3bdd73"
           alchemy_api_key: ${{ secrets.ALCHEMY_API_KEY }}
-      - name: Get the output time
-        run: echo ${{ toJSON(github.event) }}
 # Use the output from the `hello` step
 # - name: Get the output time
 #   run: echo "The time was ${{ steps.mint.outputs.time }}"
