@@ -4,12 +4,12 @@ on:
   issue_comment:
     types: [created]
   pull_request:
-    types: [opened, closed]
+    types: [closed]
 
 jobs:
   mint_slices_job:
     name: Merge to Earn | Mint slices
-    # if: github.event.issue.pull_request || github.event.pull_request.merged == true
+    if: github.event.issue.pull_request || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Mint slices
