@@ -9,7 +9,7 @@ on:
 jobs:
   mint_slices_job:
     name: Merge to Earn | Mint slices
-    if: github.event.issue.pull_request || github.event.pull_request.merged == true || github.event.pull_request.status == "open"
+    if: github.event.issue.pull_request || github.event.pull_request.merged == true || github.event.action == "opened"
     runs-on: ubuntu-latest
     steps:
       - name: Mint slices
