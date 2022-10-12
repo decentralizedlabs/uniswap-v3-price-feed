@@ -8,7 +8,7 @@ on:
 
 jobs:
   mint_slices_job:
-    name: Merge to Earn | Mint slices
+    name: Merge to Earn | Mint slicess
     # if: github.event.issue.pull_request || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
