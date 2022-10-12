@@ -2,23 +2,27 @@ name: Merge To Earn
 
 on:
   issue_comment:
-    type: [created]
+    types: [created]
   push:
     branches:
       - "main"
+  pull_request:
+    types: [opened]
 
 jobs:
   mint_slices_job:
     name: Merge to Earn | Mint slices
-    if: github.event.issue.pull_request || github.event.pusher
+    # if: github.event.issue.pull_request || github.event.pusher
     runs-on: ubuntu-latest
     steps:
       - name: Mint slices
         id: mint
-        uses: Dom-Mac/merge-to-earn@v3.3.4
+        uses: Dom-Mac/merge-to-earn@v3.3.5
         with:
           slicer: "0x775e6c6a298b704f95500e752cf5b649fb3bdd73"
           alchemy_api_key: ${{ secrets.ALCHEMY_API_KEY }}
+      - name: Get the output time
+        run: echo ${{ toJSON(github.event) }}
 # Use the output from the `hello` step
 # - name: Get the output time
 #   run: echo "The time was ${{ steps.mint.outputs.time }}"
