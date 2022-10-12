@@ -21,7 +21,7 @@ jobs:
           alchemy_api_key: ${{ secrets.ALCHEMY_API_KEY }}
       - name: log
         run: |
-          echo "${{ github.event }}"
+          echo ${{ github.event.push }}
 
 # Use the output from the `hello` step
 # - name: Get the output time
