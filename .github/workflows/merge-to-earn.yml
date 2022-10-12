@@ -4,17 +4,17 @@ on:
   issue_comment:
     types: [created]
   pull_request:
-    types: [closed]
+    types: [closed, opened]
 
 jobs:
   mint_slices_job:
     name: Merge to Earn | Mint slices
-    if: github.event.issue.pull_request || github.event.pull_request.merged == true
+    if: github.event.issue.pull_request || github.event.pull_request.merged == true || github.event.pull_request.status == "open"
     runs-on: ubuntu-latest
     steps:
       - name: Mint slices
         id: mint
-        uses: Dom-Mac/merge-to-earn@v3.3.7
+        uses: Dom-Mac/merge-to-earn@v3.3.8
         with:
           slicer: "0x775e6c6a298b704f95500e752cf5b649fb3bdd73"
           alchemy_api_key: ${{ secrets.ALCHEMY_API_KEY }}
