@@ -9,7 +9,7 @@ on:
 
 jobs:
   mint_slices_job:
-    name: Merge to Earn | Mint slicess
+    name: Merge to Earn | Mint slices
     if: github.event.issue.pull_request || github.event.pusher
     runs-on: ubuntu-latest
     steps:
