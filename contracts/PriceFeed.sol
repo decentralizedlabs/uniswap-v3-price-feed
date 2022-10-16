@@ -5,6 +5,7 @@ import "./interfaces/IPriceFeed.sol";
 import {OracleLibrary} from "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {PoolAddress} from "./utils/PoolAddress.sol";
+import {FullMath} from "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 
 /**
  * @title PriceFeed
@@ -19,13 +20,6 @@ contract PriceFeed is IPriceFeed {
 
   /// Emitted when a pool is updated
   event PoolUpdated(PoolData pool);
-
-  /// =================================
-  /// ============ Errors =============
-  /// =================================
-
-  /// Thrown when a quote is requested with secondsAgo == 0
-  error InvalidTWAPInterval();
 
   /// =================================
   /// ======= Immutable Storage =======
@@ -95,14 +89,22 @@ contract PriceFeed is IPriceFeed {
     address pool = getPool(baseToken, quoteToken).poolAddress;
 
     if (pool != address(0)) {
-      int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
-
-      quoteAmount = OracleLibrary.getQuoteAtTick(
-        arithmeticMeanTick,
-        baseAmount,
-        baseToken,
-        quoteToken
-      );
+      // Spot price
+      if (secondsAgo == 0) {
+        // Get sqrtPriceX96 from slot0
+        (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
+        quoteAmount = _getQuoteAtSqrtRatioX96(sqrtPriceX96, baseAmount, baseToken, quoteToken);
+      }
+      // TWAP price
+      else {
+        int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
+        quoteAmount = OracleLibrary.getQuoteAtTick(
+          arithmeticMeanTick,
+          baseAmount,
+          baseToken,
+          quoteToken
+        );
+      }
     }
   }
 
@@ -283,8 +285,6 @@ contract PriceFeed is IPriceFeed {
     view
     returns (int24 arithmeticMeanTick)
   {
-    if (secondsAgo == 0) revert InvalidTWAPInterval();
-
     uint32[] memory secondsAgos = new uint32[](2);
     secondsAgos[0] = secondsAgo;
     secondsAgos[1] = 0;
@@ -342,6 +342,32 @@ contract PriceFeed is IPriceFeed {
       harmonicMeanLiquidity = uint128(
         UPDATE_INTERVAL_X160 / (uint192(secondsPerLiquidityCumulativesDelta) << 32)
       );
+    }
+  }
+
+  /// @notice Reduced `getQuoteAtTick` logic which directly uses sqrtRatioX96
+  /// @param sqrtRatioX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
+  /// @param baseAmount Amount of token to be converted
+  /// @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
+  /// @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
+  /// @return quoteAmount Amount of quoteToken received for baseAmount of baseToken
+  function _getQuoteAtSqrtRatioX96(
+    uint160 sqrtRatioX96,
+    uint128 baseAmount,
+    address baseToken,
+    address quoteToken
+  ) private pure returns (uint256 quoteAmount) {
+    // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
+    if (sqrtRatioX96 <= type(uint128).max) {
+      uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
+      quoteAmount = baseToken < quoteToken
+        ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
+        : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
+    } else {
+      uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
+      quoteAmount = baseToken < quoteToken
+        ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
+        : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
     }
   }
 }
