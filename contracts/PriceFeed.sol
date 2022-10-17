@@ -33,9 +33,9 @@ contract PriceFeed is IPriceFeed {
   uint32[] private UPDATE_SECONDS_AGO = [UPDATE_INTERVAL, 0];
   /// UniswapV3Pool possible fee amounts
   uint24[] private FEES = [10000, 3000, 500, 100];
-  /// Max cardinality value when updating pools via `getUpdatedPool` or `getQuoteAndUpdatePool`
-  /// @dev Max useful cardinality for 30-min TWAPs, based on a max of 5 observation per minute.
-  uint16 public MAX_CARDINALITY = 150;
+  /// Value under which cardinality increase is triggered when updating pools via `getUpdatedPool`
+  /// or `getQuoteAndUpdatePool`
+  uint16 public MAX_CARDINALITY = 256;
   /// UniswapV3Factory contract address
   address public immutable uniswapV3Factory;
 
