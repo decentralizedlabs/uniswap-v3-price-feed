@@ -76,7 +76,6 @@ contract PriceFeed is IPriceFeed {
    * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
    * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
    *
-   * Requirement: `secondsAgo` must be greater than 0.
    * Note: If a pool does not exist or a valid quote is not returned execution will not revert and
    * `quoteAmount` will be 0.
    */
@@ -149,7 +148,6 @@ contract PriceFeed is IPriceFeed {
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
    * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
    *
-   * Requirement: `secondsAgo` must be greater than 0.
    * Note: If a pool does not exist or a valid quote is not returned execution will not revert and
    * `quoteAmount` will be 0.
    * Note: Set updateInterval to 0 to always trigger an update, or to block.timestamp to only update if a pool
