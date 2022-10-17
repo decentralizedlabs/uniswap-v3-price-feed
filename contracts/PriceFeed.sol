@@ -33,6 +33,9 @@ contract PriceFeed is IPriceFeed {
   uint32[] private UPDATE_SECONDS_AGO = [UPDATE_INTERVAL, 0];
   /// UniswapV3Pool possible fee amounts
   uint24[] private FEES = [10000, 3000, 500, 100];
+  /// Max cardinality value when updating pools via `getUpdatedPool` or `getQuoteAndUpdatePool`
+  /// @dev Max useful cardinality for 30-min TWAPs, based on a max of 5 observation per minute.
+  uint16 public MAX_CARDINALITY = 150;
   /// UniswapV3Factory contract address
   address public immutable uniswapV3Factory;
 
@@ -88,13 +91,13 @@ contract PriceFeed is IPriceFeed {
     address pool = getPool(baseToken, quoteToken).poolAddress;
 
     if (pool != address(0)) {
-      // Spot price
+      // Get spot price
       if (secondsAgo == 0) {
         // Get sqrtPriceX96 from slot0
         (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
-        quoteAmount = _getQuoteAtSqrtRatioX96(sqrtPriceX96, baseAmount, baseToken, quoteToken);
+        quoteAmount = _getQuoteAtSqrtPriceX96(sqrtPriceX96, baseAmount, baseToken, quoteToken);
       }
-      // TWAP price
+      // Get TWAP price
       else {
         int24 arithmeticMeanTick = _getArithmeticMeanTick(pool, secondsAgo);
         quoteAmount = OracleLibrary.getQuoteAtTick(
@@ -112,6 +115,8 @@ contract PriceFeed is IPriceFeed {
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
+   * @param cardinalityIncrease The increase amount in cardinality to trigger during update in a pool
+   * if current value < MAX_CARDINALITY
    * @return pool address, fee and last edit timestamp
    *
    * Note: Set updateInterval to 0 to always trigger an update, or to block.timestamp to only update if a pool
@@ -120,11 +125,12 @@ contract PriceFeed is IPriceFeed {
   function getUpdatedPool(
     address tokenA,
     address tokenB,
-    uint256 updateInterval
+    uint256 updateInterval,
+    uint8 cardinalityIncrease
   ) public returns (PoolData memory pool) {
     // Shortcircuit the case where we need to update
     if (updateInterval == 0) {
-      (pool, ) = updatePool(tokenA, tokenB);
+      (pool, , ) = updatePool(tokenA, tokenB, cardinalityIncrease);
       return pool;
     }
 
@@ -135,7 +141,7 @@ contract PriceFeed is IPriceFeed {
       pool.poolAddress == address(0) ||
       pool.lastUpdatedTimestamp + updateInterval <= block.timestamp
     ) {
-      (pool, ) = updatePool(tokenA, tokenB);
+      (pool, , ) = updatePool(tokenA, tokenB, cardinalityIncrease);
     }
   }
 
@@ -146,6 +152,7 @@ contract PriceFeed is IPriceFeed {
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
    * @param secondsAgo Number of seconds in the past from which to calculate the time-weighted quote
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
+   * @param cardinalityIncrease The increase in cardinality to trigger in a pool if current value < MAX_CARDINALITY
    * @return quoteAmount Equivalent amount of ERC20 token for baseAmount
    *
    * Note: If a pool does not exist or a valid quote is not returned execution will not revert and
@@ -158,35 +165,50 @@ contract PriceFeed is IPriceFeed {
     address baseToken,
     address quoteToken,
     uint32 secondsAgo,
-    uint256 updateInterval
+    uint256 updateInterval,
+    uint8 cardinalityIncrease
   ) public returns (uint256 quoteAmount) {
-    (PoolData memory pool, int56[] memory tickCumulatives) = _getUpdatedPoolWithTicks(
-      baseToken,
-      quoteToken,
-      updateInterval
-    );
+    (
+      PoolData memory pool,
+      int56[] memory tickCumulatives,
+      uint160 sqrtPriceX96
+    ) = _getUpdatedPoolWithTicks(baseToken, quoteToken, updateInterval, cardinalityIncrease);
 
+    // If pool exists
     if (pool.poolAddress != address(0)) {
-      int24 arithmeticMeanTick;
+      // Get spot price
+      if (secondsAgo == 0) {
+        // If sqrtPriceX96 was not returned from `_getUpdatedPoolWithTicks`
+        if (sqrtPriceX96 == 0) {
+          // Get sqrtPriceX96 from slot0
+          (sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool.poolAddress).slot0();
+        }
 
-      // If _getUpdatedPoolWithTicks returned non null tickCumulatives
-      if (tickCumulatives[0] != tickCumulatives[1]) {
-        // Calculate arithmeticMeanTick from tickCumulatives
-        int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
-        arithmeticMeanTick = int24(tickCumulativesDelta / int56(uint56(secondsAgo)));
-        // Always round to negative infinity
-        if (tickCumulativesDelta < 0 && (tickCumulativesDelta % int56(uint56(secondsAgo)) != 0))
-          arithmeticMeanTick--;
-      } else {
-        arithmeticMeanTick = _getArithmeticMeanTick(pool.poolAddress, secondsAgo);
+        quoteAmount = _getQuoteAtSqrtPriceX96(sqrtPriceX96, baseAmount, baseToken, quoteToken);
       }
+      // Get TWAP price
+      else {
+        int24 arithmeticMeanTick;
 
-      quoteAmount = OracleLibrary.getQuoteAtTick(
-        arithmeticMeanTick,
-        baseAmount,
-        baseToken,
-        quoteToken
-      );
+        // If _getUpdatedPoolWithTicks returned non null tickCumulatives
+        if (tickCumulatives[0] != tickCumulatives[1]) {
+          // Calculate arithmeticMeanTick from tickCumulatives
+          int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
+          arithmeticMeanTick = int24(tickCumulativesDelta / int56(uint56(secondsAgo)));
+          // Always round to negative infinity
+          if (tickCumulativesDelta < 0 && (tickCumulativesDelta % int56(uint56(secondsAgo)) != 0))
+            arithmeticMeanTick--;
+        } else {
+          arithmeticMeanTick = _getArithmeticMeanTick(pool.poolAddress, secondsAgo);
+        }
+
+        quoteAmount = OracleLibrary.getQuoteAtTick(
+          arithmeticMeanTick,
+          baseAmount,
+          baseToken,
+          quoteToken
+        );
+      }
     }
   }
 
@@ -195,22 +217,69 @@ contract PriceFeed is IPriceFeed {
    * The most traded pool is considered to be the one with the highest TWAL.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
+   * @param cardinalityIncrease The increase amount in cardinality to trigger during update in a pool
+   * if current value < MAX_CARDINALITY
    * @return highestLiquidityPool Pool with the highest harmonicMeanLiquidity
    * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
+   * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
    */
-  function updatePool(address tokenA, address tokenB)
+  function updatePool(
+    address tokenA,
+    address tokenB,
+    uint8 cardinalityIncrease
+  )
     public
-    returns (PoolData memory highestLiquidityPool, int56[] memory tickCumulatives)
+    returns (
+      PoolData memory highestLiquidityPool,
+      int56[] memory tickCumulatives,
+      uint160 sqrtPriceX96
+    )
   {
     // Order token addresses
     (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
-    // Add reference for highest pool and liquidity value
+    // Get highest liquidity pool
+    (highestLiquidityPool, tickCumulatives, sqrtPriceX96) = _getHighestLiquidityPool(
+      token0,
+      token1,
+      cardinalityIncrease
+    );
+
+    /// Update pool in storage with `highestLiquidityPool`
+    /// @dev New value should be stored even if highestPool = currentPool to update `lastUpdatedTimestamp`.
+    pools[token0][token1] = highestLiquidityPool;
+    emit PoolUpdated(highestLiquidityPool);
+  }
+
+  /**
+   * @notice Gets the pool with the highest harmonic liquidity.
+   * @param token0 Address of the first ERC20 token contract in the pool
+   * @param token1 Address of the second ERC20 token contract in the pool
+   * @param cardinalityIncrease The increase amount in cardinality to trigger during update in a pool
+   * if current value < MAX_CARDINALITY
+   * @return highestLiquidityPool Pool with the highest harmonicMeanLiquidity
+   * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
+   * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
+   */
+  function _getHighestLiquidityPool(
+    address token0,
+    address token1,
+    uint8 cardinalityIncrease
+  )
+    private
+    returns (
+      PoolData memory highestLiquidityPool,
+      int56[] memory tickCumulatives,
+      uint160 sqrtPriceX96
+    )
+  {
+    // Add reference for highest liquidity
     uint256 highestLiquidity;
 
     // Add reference for values used in loop
     address poolAddress;
     uint256 harmonicMeanLiquidity;
+
     for (uint256 i; i < 4; ) {
       // Compute pool address
       poolAddress = PoolAddress.computeAddress(
@@ -225,9 +294,9 @@ contract PriceFeed is IPriceFeed {
 
         // If liquidity is higher than the previously stored one
         if (harmonicMeanLiquidity > highestLiquidity) {
-          // Update reference values
+          // Update reference values except pool cardinality
           highestLiquidity = harmonicMeanLiquidity;
-          highestLiquidityPool = PoolData(poolAddress, FEES[i], uint48(block.timestamp));
+          highestLiquidityPool = PoolData(poolAddress, FEES[i], uint48(block.timestamp), 0);
         }
       }
 
@@ -236,10 +305,27 @@ contract PriceFeed is IPriceFeed {
       }
     }
 
-    /// Update stored pool with `highestLiquidityPool`
-    /// @dev New value should be stored even if highestPool = currentPool to update `lastUpdatedTimestamp`.
-    pools[token0][token1] = highestLiquidityPool;
-    emit PoolUpdated(highestLiquidityPool);
+    // If there is a pool to update
+    if (highestLiquidityPool.poolAddress != address(0)) {
+      // Update observation cardinality of `highestLiquidityPool`
+      (sqrtPriceX96, , , highestLiquidityPool.lastUpdatedCardinality, , , ) = IUniswapV3Pool(
+        highestLiquidityPool.poolAddress
+      ).slot0();
+
+      // If a cardinality increase is wanted and current cardinality < MAX_CARDINALITY
+      if (
+        cardinalityIncrease != 0 && highestLiquidityPool.lastUpdatedCardinality < MAX_CARDINALITY
+      ) {
+        // Increase cardinality and update value in reference pool
+        // Does not overflow uint16 as MAX_CARDINALITY + type(uint8).max < uint(16).max
+        unchecked {
+          highestLiquidityPool.lastUpdatedCardinality += cardinalityIncrease;
+          IUniswapV3Pool(highestLiquidityPool.poolAddress).increaseObservationCardinalityNext(
+            highestLiquidityPool.lastUpdatedCardinality
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -248,16 +334,27 @@ contract PriceFeed is IPriceFeed {
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
+   * @param cardinalityIncrease The increase amount in cardinality to trigger during update in a pool
+   * if current value < MAX_CARDINALITY
    * @return pool address, fee and last edit timestamp
    * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
+   * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
    */
   function _getUpdatedPoolWithTicks(
     address tokenA,
     address tokenB,
-    uint256 updateInterval
-  ) private returns (PoolData memory pool, int56[] memory tickCumulatives) {
+    uint256 updateInterval,
+    uint8 cardinalityIncrease
+  )
+    private
+    returns (
+      PoolData memory pool,
+      int56[] memory tickCumulatives,
+      uint160 sqrtPriceX96
+    )
+  {
     // Shortcircuit the case where we need to update
-    if (updateInterval == 0) return updatePool(tokenA, tokenB);
+    if (updateInterval == 0) return updatePool(tokenA, tokenB, cardinalityIncrease);
 
     pool = getPool(tokenA, tokenB);
 
@@ -266,7 +363,7 @@ contract PriceFeed is IPriceFeed {
       pool.poolAddress == address(0) ||
       pool.lastUpdatedTimestamp + updateInterval <= block.timestamp
     ) {
-      (pool, tickCumulatives) = updatePool(tokenA, tokenB);
+      return updatePool(tokenA, tokenB, cardinalityIncrease);
     }
   }
 
@@ -343,26 +440,26 @@ contract PriceFeed is IPriceFeed {
     }
   }
 
-  /// @notice Reduced `getQuoteAtTick` logic which directly uses sqrtRatioX96
-  /// @param sqrtRatioX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
+  /// @notice Reduced `getQuoteAtTick` logic which directly uses sqrtPriceX96
+  /// @param sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
   /// @param baseAmount Amount of token to be converted
   /// @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
   /// @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
   /// @return quoteAmount Amount of quoteToken received for baseAmount of baseToken
-  function _getQuoteAtSqrtRatioX96(
-    uint160 sqrtRatioX96,
+  function _getQuoteAtSqrtPriceX96(
+    uint160 sqrtPriceX96,
     uint128 baseAmount,
     address baseToken,
     address quoteToken
   ) private pure returns (uint256 quoteAmount) {
     // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
-    if (sqrtRatioX96 <= type(uint128).max) {
-      uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
+    if (sqrtPriceX96 <= type(uint128).max) {
+      uint256 ratioX192 = uint256(sqrtPriceX96) * sqrtPriceX96;
       quoteAmount = baseToken < quoteToken
         ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
         : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
     } else {
-      uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
+      uint256 ratioX128 = FullMath.mulDiv(sqrtPriceX96, sqrtPriceX96, 1 << 64);
       quoteAmount = baseToken < quoteToken
         ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
         : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
