@@ -3,6 +3,7 @@ pragma solidity >=0.8.0;
 
 import "./interfaces/IPriceFeed.sol";
 import {OracleLibrary} from "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
+import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {PoolAddress} from "./utils/PoolAddress.sol";
 import {FullMath} from "@uniswap/v3-core/contracts/libraries/FullMath.sol";
@@ -31,11 +32,11 @@ contract PriceFeed is IPriceFeed {
   uint192 private constant UPDATE_INTERVAL_X160 = uint192(UPDATE_INTERVAL) << 160;
   /// UPDATE_INTERVAL formatted to secondsAgo array
   uint32[] private UPDATE_SECONDS_AGO = [UPDATE_INTERVAL, 0];
-  /// UniswapV3Pool fee tiers
-  uint24[] private FEES = [10000, 3000, 500, 100];
   /// Value under which cardinality increase is triggered when updating pools via `getUpdatedPool`
   /// or `getQuoteAndUpdatePool`
   uint16 public MAX_CARDINALITY = 256;
+  /// UniswapV3Pool fee tiers
+  uint24[] public fees = [10000, 3000, 500, 100];
   /// UniswapV3Factory contract address
   address public immutable uniswapV3Factory;
 
@@ -259,6 +260,16 @@ contract PriceFeed is IPriceFeed {
   }
 
   /**
+   * @notice Add a fee tier to `fees` if supported on Uniswap.
+   * @param fee tier to add
+   */
+  function addFee(uint24 fee) public {
+    if (IUniswapV3Factory(uniswapV3Factory).feeAmountTickSpacing(fee) != 0) {
+      fees.push(fee);
+    }
+  }
+
+  /**
    * @notice Gets the pool with the highest harmonic liquidity.
    * @param token0 Address of the first ERC20 token contract in the pool
    * @param token1 Address of the second ERC20 token contract in the pool
@@ -287,11 +298,11 @@ contract PriceFeed is IPriceFeed {
     address poolAddress;
     uint256 harmonicMeanLiquidity;
 
-    for (uint256 i; i < 4; ) {
+    for (uint256 i; i < fees.length; ) {
       // Compute pool address
       poolAddress = PoolAddress.computeAddress(
         uniswapV3Factory,
-        PoolAddress.PoolKey(token0, token1, FEES[i])
+        PoolAddress.PoolKey(token0, token1, fees[i])
       );
 
       // If pool has been deployed
@@ -303,7 +314,7 @@ contract PriceFeed is IPriceFeed {
         if (harmonicMeanLiquidity > highestLiquidity) {
           // Update reference values except pool cardinality
           highestLiquidity = harmonicMeanLiquidity;
-          highestLiquidityPool = PoolData(poolAddress, FEES[i], uint48(block.timestamp), 0);
+          highestLiquidityPool = PoolData(poolAddress, fees[i], uint48(block.timestamp), 0);
         }
       }
 

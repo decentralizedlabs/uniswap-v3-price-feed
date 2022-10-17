@@ -6,6 +6,8 @@ import "../structs/PoolData.sol";
 interface IPriceFeed {
   function uniswapV3Factory() external view returns (address uniswapV3Factory);
 
+  function fees(uint256 index) external view returns (uint24 fee);
+
   function pools(address token0, address token1)
     external
     view
@@ -58,4 +60,6 @@ interface IPriceFeed {
       int56[] memory tickCumulatives,
       uint160 sqrtPriceX96
     );
+
+  function addFee(uint24 fee) external;
 }
