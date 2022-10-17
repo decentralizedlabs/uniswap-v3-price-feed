@@ -111,42 +111,49 @@ contract PriceFeed is IPriceFeed {
   }
 
   /**
-   * @notice Retrieves pool given tokenA and tokenB regardless of order, and updates pool if necessary.
+   * @notice Retrieves stored pool given tokenA and tokenB regardless of order, and updates pool if necessary.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
-   * @param cardinalityIncrease The increase amount in cardinality to trigger during update in a pool
-   * if current value < MAX_CARDINALITY
-   * @return pool address, fee and last edit timestamp
+   * @param cardinalityIncrease The amount of cardinality to increase when updating a pool, if
+   * current value < MAX_CARDINALITY.
+   * @return pool address, fee, last edit timestamp and last recorded cardinality.
+   * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
+   * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
    *
    * Note: Set updateInterval to 0 to always trigger an update, or to block.timestamp to only update if a pool
    * has not been stored yet.
+   * Note: Set `cardinalityIncrease` to 0 to disable increasing cardinality when updating pool.
    */
   function getUpdatedPool(
     address tokenA,
     address tokenB,
     uint256 updateInterval,
     uint8 cardinalityIncrease
-  ) public returns (PoolData memory pool) {
-    // Shortcircuit the case where we need to update
-    if (updateInterval == 0) {
-      (pool, , ) = updatePool(tokenA, tokenB, cardinalityIncrease);
-      return pool;
-    }
+  )
+    public
+    returns (
+      PoolData memory pool,
+      int56[] memory tickCumulatives,
+      uint160 sqrtPriceX96
+    )
+  {
+    // Shortcircuit update when `updateInterval` == 0
+    if (updateInterval == 0) return updatePool(tokenA, tokenB, cardinalityIncrease);
 
     pool = getPool(tokenA, tokenB);
 
-    // If no pool is stored or updateInterval has passed since lastUpdatedTimestamp
+    // Update pool if no pool is stored or `updateInterval` has passed since `lastUpdatedTimestamp`
     if (
       pool.poolAddress == address(0) ||
       pool.lastUpdatedTimestamp + updateInterval <= block.timestamp
     ) {
-      (pool, , ) = updatePool(tokenA, tokenB, cardinalityIncrease);
+      return updatePool(tokenA, tokenB, cardinalityIncrease);
     }
   }
 
   /**
-   * @notice Get the time-weighted quote of `quoteToken`, and updates the pool when there is no pool stored.
+   * @notice Get the time-weighted quote of `quoteToken`, and updates the pool when necessary.
    * @param baseAmount Amount of baseToken to be converted
    * @param baseToken Address of an ERC20 token contract used as the baseAmount denomination
    * @param quoteToken Address of an ERC20 token contract used as the quoteAmount denomination
@@ -168,29 +175,29 @@ contract PriceFeed is IPriceFeed {
     uint256 updateInterval,
     uint8 cardinalityIncrease
   ) public returns (uint256 quoteAmount) {
-    (
-      PoolData memory pool,
-      int56[] memory tickCumulatives,
-      uint160 sqrtPriceX96
-    ) = _getUpdatedPoolWithTicks(baseToken, quoteToken, updateInterval, cardinalityIncrease);
+    (PoolData memory pool, int56[] memory tickCumulatives, uint160 sqrtPriceX96) = getUpdatedPool(
+      baseToken,
+      quoteToken,
+      updateInterval,
+      cardinalityIncrease
+    );
 
     // If pool exists
     if (pool.poolAddress != address(0)) {
       // Get spot price
       if (secondsAgo == 0) {
-        // If sqrtPriceX96 was not returned from `_getUpdatedPoolWithTicks`
+        // If sqrtPriceX96 was not returned from `getUpdatedPool`
         if (sqrtPriceX96 == 0) {
           // Get sqrtPriceX96 from slot0
           (sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool.poolAddress).slot0();
         }
-
         quoteAmount = _getQuoteAtSqrtPriceX96(sqrtPriceX96, baseAmount, baseToken, quoteToken);
       }
       // Get TWAP price
       else {
         int24 arithmeticMeanTick;
 
-        // If _getUpdatedPoolWithTicks returned non null tickCumulatives
+        // If `getUpdatedPool` returned non null tickCumulatives
         if (tickCumulatives[0] != tickCumulatives[1]) {
           // Calculate arithmeticMeanTick from tickCumulatives
           int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
@@ -325,45 +332,6 @@ contract PriceFeed is IPriceFeed {
           );
         }
       }
-    }
-  }
-
-  /**
-   * @notice Same as `getUpdatedPool` but also returns tickCumulatives if an update is triggered.
-   * Used internally in `getQuoteAndUpdatePool` to avoid an unnecessary call to the pool.
-   * @param tokenA Address of one of the ERC20 token contract in the pool
-   * @param tokenB Address of the other ERC20 token contract in the pool
-   * @param updateInterval Seconds after which a pool is considered stale and an update is triggered
-   * @param cardinalityIncrease The increase amount in cardinality to trigger during update in a pool
-   * if current value < MAX_CARDINALITY
-   * @return pool address, fee and last edit timestamp
-   * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
-   * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
-   */
-  function _getUpdatedPoolWithTicks(
-    address tokenA,
-    address tokenB,
-    uint256 updateInterval,
-    uint8 cardinalityIncrease
-  )
-    private
-    returns (
-      PoolData memory pool,
-      int56[] memory tickCumulatives,
-      uint160 sqrtPriceX96
-    )
-  {
-    // Shortcircuit the case where we need to update
-    if (updateInterval == 0) return updatePool(tokenA, tokenB, cardinalityIncrease);
-
-    pool = getPool(tokenA, tokenB);
-
-    // If no pool is stored or updateInterval has passed since lastUpdatedTimestamp
-    if (
-      pool.poolAddress == address(0) ||
-      pool.lastUpdatedTimestamp + updateInterval <= block.timestamp
-    ) {
-      return updatePool(tokenA, tokenB, cardinalityIncrease);
     }
   }
 
