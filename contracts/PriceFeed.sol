@@ -36,6 +36,8 @@ contract PriceFeed is IPriceFeed {
   uint16 public MAX_CARDINALITY = 256;
   /// UniswapV3Pool fee tiers
   uint24[] public fees = [10000, 3000, 500, 100];
+  /// Mapping of active fee tiers
+  mapping(uint24 => bool) public activeFees;
   /// UniswapV3Factory contract address
   address public immutable uniswapV3Factory;
 
@@ -52,6 +54,14 @@ contract PriceFeed is IPriceFeed {
 
   constructor(address uniswapV3Factory_) {
     uniswapV3Factory = uniswapV3Factory_;
+
+    // Activate fee tiers
+    for (uint256 i; i < fees.length; ) {
+      activeFees[fees[i]] = true;
+      unchecked {
+        ++i;
+      }
+    }
   }
 
   /// =================================
@@ -263,7 +273,8 @@ contract PriceFeed is IPriceFeed {
    * @param fee tier to add
    */
   function addFee(uint24 fee) public {
-    if (IUniswapV3Factory(uniswapV3Factory).feeAmountTickSpacing(fee) != 0) {
+    if (IUniswapV3Factory(uniswapV3Factory).feeAmountTickSpacing(fee) != 0 && !activeFees[fee]) {
+      activeFees[fee] = true;
       fees.push(fee);
     }
   }
