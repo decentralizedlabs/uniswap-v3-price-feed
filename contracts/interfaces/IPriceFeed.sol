@@ -30,7 +30,13 @@ interface IPriceFeed {
     address tokenB,
     uint256 updateInterval,
     uint8 cardinalityIncrease
-  ) external returns (PoolData memory pool);
+  )
+    external
+    returns (
+      PoolData memory pool,
+      int56[] memory tickCumulatives,
+      uint160 sqrtPriceX96
+    );
 
   function getQuoteAndUpdatePool(
     uint128 baseAmount,
