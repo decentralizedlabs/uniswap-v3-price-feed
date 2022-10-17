@@ -32,8 +32,7 @@ contract PriceFeed is IPriceFeed {
   uint192 private constant UPDATE_INTERVAL_X160 = uint192(UPDATE_INTERVAL) << 160;
   /// UPDATE_INTERVAL formatted to secondsAgo array
   uint32[] private UPDATE_SECONDS_AGO = [UPDATE_INTERVAL, 0];
-  /// Value under which cardinality increase is triggered when updating pools via `getUpdatedPool`
-  /// or `getQuoteAndUpdatePool`
+  /// Current observation cardinality value under which a cardinality increase is triggered when updating pools
   uint16 public MAX_CARDINALITY = 256;
   /// UniswapV3Pool fee tiers
   uint24[] public fees = [10000, 3000, 500, 100];
