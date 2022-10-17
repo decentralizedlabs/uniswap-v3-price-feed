@@ -6,6 +6,8 @@ import "../structs/PoolData.sol";
 interface IPriceFeed {
   function uniswapV3Factory() external view returns (address uniswapV3Factory);
 
+  function activeFees(uint24 index) external view returns (bool);
+
   function fees(uint256 index) external view returns (uint24 fee);
 
   function pools(address token0, address token1)
