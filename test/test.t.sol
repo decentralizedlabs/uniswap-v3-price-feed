@@ -46,6 +46,10 @@ contract BaseTest is DSTestPlus {
   }
 
   function testUpdatePool() public {
-    priceFeed.updatePool(address(token1), address(token2));
+    priceFeed.updatePool(address(token1), address(token2), 0);
+  }
+
+  function testGetUpdatedPool() public {
+    priceFeed.getUpdatedPool(address(token1), address(token2), 10, 10);
   }
 }
