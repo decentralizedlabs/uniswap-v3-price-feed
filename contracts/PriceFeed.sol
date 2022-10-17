@@ -31,7 +31,7 @@ contract PriceFeed is IPriceFeed {
   uint192 private constant UPDATE_INTERVAL_X160 = uint192(UPDATE_INTERVAL) << 160;
   /// UPDATE_INTERVAL formatted to secondsAgo array
   uint32[] private UPDATE_SECONDS_AGO = [UPDATE_INTERVAL, 0];
-  /// UniswapV3Pool possible fee amounts
+  /// UniswapV3Pool fee tiers
   uint24[] private FEES = [10000, 3000, 500, 100];
   /// Value under which cardinality increase is triggered when updating pools via `getUpdatedPool`
   /// or `getQuoteAndUpdatePool`
@@ -59,10 +59,10 @@ contract PriceFeed is IPriceFeed {
   /// =================================
 
   /**
-   * @notice Retrieves pool given tokenA and tokenB regardless of order.
+   * @notice Retrieves stored pool given tokenA and tokenB regardless of order.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
-   * @return pool address, fee and last edit timestamp.
+   * @return pool address, fee, last edit timestamp and last recorded cardinality.
    */
   function getPool(address tokenA, address tokenB) public view returns (PoolData memory pool) {
     (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
@@ -166,6 +166,7 @@ contract PriceFeed is IPriceFeed {
    * `quoteAmount` will be 0.
    * Note: Set updateInterval to 0 to always trigger an update, or to block.timestamp to only update if a pool
    * has not been stored yet.
+   * Note: Set `cardinalityIncrease` to 0 to disable increasing cardinality when updating pool.
    */
   function getQuoteAndUpdatePool(
     uint128 baseAmount,
@@ -220,13 +221,12 @@ contract PriceFeed is IPriceFeed {
   }
 
   /**
-   * @notice Updates stored pool with the most traded one in the last 30 minutes.
-   * The most traded pool is considered to be the one with the highest TWAL.
+   * @notice Updates stored pool with the one having the highest TWAL in the last 30 minutes.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
-   * @param cardinalityIncrease The increase amount in cardinality to trigger during update in a pool
-   * if current value < MAX_CARDINALITY
-   * @return highestLiquidityPool Pool with the highest harmonicMeanLiquidity
+   * @param cardinalityIncrease The amount of observation cardinality to increase when updating a pool if
+   * current value < MAX_CARDINALITY
+   * @return highestLiquidityPool Pool with the highest harmonic mean liquidity
    * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
    * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
    */
@@ -262,9 +262,9 @@ contract PriceFeed is IPriceFeed {
    * @notice Gets the pool with the highest harmonic liquidity.
    * @param token0 Address of the first ERC20 token contract in the pool
    * @param token1 Address of the second ERC20 token contract in the pool
-   * @param cardinalityIncrease The increase amount in cardinality to trigger during update in a pool
-   * if current value < MAX_CARDINALITY
-   * @return highestLiquidityPool Pool with the highest harmonicMeanLiquidity
+   * @param cardinalityIncrease The amount of observation cardinality to increase when updating a pool if
+   * current value < MAX_CARDINALITY
+   * @return highestLiquidityPool Pool with the highest highest harmonic mean liquidity
    * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
    * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
    */
@@ -280,7 +280,7 @@ contract PriceFeed is IPriceFeed {
       uint160 sqrtPriceX96
     )
   {
-    // Add reference for highest liquidity
+    // Add reference for highest liquidity value
     uint256 highestLiquidity;
 
     // Add reference for values used in loop
@@ -324,7 +324,7 @@ contract PriceFeed is IPriceFeed {
         cardinalityIncrease != 0 && highestLiquidityPool.lastUpdatedCardinality < MAX_CARDINALITY
       ) {
         // Increase cardinality and update value in reference pool
-        // Does not overflow uint16 as MAX_CARDINALITY + type(uint8).max < uint(16).max
+        // Cannot overflow uint16 as MAX_CARDINALITY + type(uint8).max < uint(16).max
         unchecked {
           highestLiquidityPool.lastUpdatedCardinality += cardinalityIncrease;
           IUniswapV3Pool(highestLiquidityPool.poolAddress).increaseObservationCardinalityNext(
@@ -373,7 +373,7 @@ contract PriceFeed is IPriceFeed {
 
   /**
    * @notice Same as `consult` in {OracleLibrary} but saves gas by not calculating `arithmeticMeanTick` and
-   * defaulting to `UPDATE_INTERVAL` seconds ago.
+   * defaulting to twap interval to `UPDATE_SECONDS_AGO`.
    * @param pool Address of the pool that we want to observe
    * @return harmonicMeanLiquidity The harmonic mean liquidity from (block.timestamp - secondsAgo) to block.timestamp
    * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
