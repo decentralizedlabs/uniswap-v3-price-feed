@@ -27,7 +27,7 @@ This design choice provides the following benefits:
 
 1. Users can update pools and increase their cardinality more or less frequently, depending on their needs;
 2. Users improve reliability of Uniswap V3 pools by increasing their cardinality as they interact with them;
-3. The more the price feed is used, the higher its reliability and usefulness for the Ethereum ecosystem.
+3. The more the price feed is used, the higher its efficiency, reliability and usefulness for the Ethereum ecosystem.
 
 At the same time anyone can use `getPool` to retrieve the current main pool for a currency pair, or `getQuote` to get a **time-weighted quote** by specifying the `currency addresses`, `the amount of base currency to convert` and the desired `twap interval`.
 
@@ -54,11 +54,11 @@ See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 
 ## Deployments
 
-`PriceFeed` has been deployed to `0x8a834e6bB36B8D5CF9294467F9b7070383f1ab71` on the following networks:
+`PriceFeed` has been deployed to `0xf2E8176c0b67232b20205f4dfbCeC3e74bca471F` on the following networks:
 
-<!-- - [Ethereum Mainnet](https://etherscan.io/address/0x8a834e6bB36B8D5CF9294467F9b7070383f1ab71) -->
+<!-- - [Ethereum Mainnet](https://etherscan.io/address/0xf2E8176c0b67232b20205f4dfbCeC3e74bca471F) -->
 
-- [Ethereum Goerli Testnet](https://goerli.etherscan.io/address/0x8a834e6bB36B8D5CF9294467F9b7070383f1ab71)
+- [Ethereum Goerli Testnet](https://goerli.etherscan.io/address/0xf2E8176c0b67232b20205f4dfbCeC3e74bca471F)
 
 ## Support the project
 
