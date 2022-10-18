@@ -21,13 +21,19 @@ Over sufficiently large time intervals, **harmonic mean liquidity (TWAL) can be 
 
 > You can learn more about TWAL and Liquidity Oracles in the [Uniswap V3 Core whitepaper](https://uniswap.org/whitepaper-v3.pdf).
 
-The price feed relies on the collaborative effort of users to keep updated the reference for the main pool for each currency pair. This is facilitated by `getUpdatedPool` and `getQuoteAndUpdatePool` which allow interacting with the feed while updating stale pools at the same time.
+The price feed relies on the collaborative effort of users to keep updated the reference for the main pool for each currency pair. This is facilitated by `getUpdatedPool` and `getQuoteAndUpdatePool` which allow interacting with the feed while updating stale pools and increasing observation cardinality at the same time.
 
-At the same time anyone can use `getPool` to retrieve the current main pool for a currency pair, or `getQuote` to get a time-weighted quote by specifying the `currency addresses`, `the amount of base currency to convert` and the `twap interval`.
+This design choice provides the following benefits:
+
+1. Users can update pools and increase their cardinality more or less frequently, depending on their needs;
+2. Users improve reliability of Uniswap V3 pools by increasing their cardinality as they interact with them;
+3. The more the price feed is used, the higher its reliability and usefulness for the Ethereum ecosystem.
+
+At the same time anyone can use `getPool` to retrieve the current main pool for a currency pair, or `getQuote` to get a **time-weighted quote** by specifying the `currency addresses`, `the amount of base currency to convert` and the desired `twap interval`.
 
 This makes it easy and efficient to interact with TWAP oracles or integrate them into other smart contracts.
 
-> The price feed will soon be used by the [Slice protocol](https://slice.so) to provide dynamic pricing for products in any ERC20 currency, periodically updating the pools it interacts with. Usage from more parties is encouraged to increase the usefulness and efficiency of the price feed for the whole Ethereum ecosystem.
+> The price feed will soon be used by the [Slice protocol](https://slice.so) to provide dynamic pricing for products in any ERC20 currency, periodically updating the pools it interacts with.
 
 ## Functions
 
@@ -48,20 +54,21 @@ See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 
 ## Deployments
 
-`PriceFeed` has been deployed to `0xa706E21E91218E8F83B49C02B26a1cEdC153E586` on the following networks:
+`PriceFeed` has been deployed to `0x8a834e6bB36B8D5CF9294467F9b7070383f1ab71` on the following networks:
 
-- [Ethereum Mainnet](https://etherscan.io/address/0xa706E21E91218E8F83B49C02B26a1cEdC153E586)
-- [Ethereum Goerli Testnet](https://goerli.etherscan.io/address/0xa706E21E91218E8F83B49C02B26a1cEdC153E586)
+<!-- - [Ethereum Mainnet](https://etherscan.io/address/0x8a834e6bB36B8D5CF9294467F9b7070383f1ab71) -->
+
+- [Ethereum Goerli Testnet](https://goerli.etherscan.io/address/0x8a834e6bB36B8D5CF9294467F9b7070383f1ab71)
 
 ## Support the project
 
 You can support the project by donating to either its slicer or Juicebox treasury.
 
-### [Price Feed Slicer](https://slice.so/slicer/22)
+### [Slicer](https://slice.so/slicer/22)
 
-By sending ETH to the slicer address `0x83c36BED51b6de81986390b6e64aDa045694E857` you're supporting the contributors of the project. In addition, you&apos;ll appear as sponsor in the slicer page and potentially receive other rewards over time.
+By sending ETH to the slicer address `0x83c36BED51b6de81986390b6e64aDa045694E857` you're supporting the contributors of the project. You&apos;ll appear as sponsor in the slicer page and eventually receive rewards over time made by the development team.
 
-In fact **ownership over the slicer is distributed to the contributors of this repository, proportionally to their contributions**. You can check the ownership distribution in the [slicer page](https://slice.so/slicer/22?view=owners), or the specifics of each slice mint on each merged PR.
+In fact, **ownership over the slicer is distributed to the contributors of this repository, proportionally to their contributions**. You can check the ownership distribution in the [slicer page](https://slice.so/slicer/22?view=owners), or the specifics of each slice mint on each merged PR.
 
 ### [Juicebox Treasury](https://juicebox.money/v2/p/264)
 
@@ -71,9 +78,9 @@ Funds sent to the [Juicebox treasury](https://juicebox.money/v2/p/264) are forwa
 
 This project uses [Foundry](https://github.com/foundry-rs/foundry) as development framework.
 
-### Merge-to-own
+### Merge-to-earn
 
-When a PR is merged, **contributors receive slices granting them a part of the future donations / earnings of the project**.
+When a PR is merged, **contributors receive slices granting them a part of the ownership and earnings related to the project**.
 
 Discussion on the slices to be issued can happen on Github or elsewhere. Once the PR is merged, the agreed amount of slices is minted to all contributors involved by the [gnosis safe](https://etherscan.io/address/0x71e1c244eF17516bcD1FA65db74F8F4f397e9097) (owned by maintainers).
 
