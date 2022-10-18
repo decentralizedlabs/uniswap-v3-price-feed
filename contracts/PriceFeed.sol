@@ -336,20 +336,21 @@ contract PriceFeed is IPriceFeed {
     // If there is a pool to update
     if (highestLiquidityPool.poolAddress != address(0)) {
       // Update observation cardinality of `highestLiquidityPool`
-      (sqrtPriceX96, , , highestLiquidityPool.lastUpdatedCardinality, , , ) = IUniswapV3Pool(
+      (sqrtPriceX96, , , , highestLiquidityPool.lastUpdatedCardinalityNext, , ) = IUniswapV3Pool(
         highestLiquidityPool.poolAddress
       ).slot0();
 
-      // If a cardinality increase is wanted and current cardinality < MAX_CARDINALITY
+      // If a cardinality increase is wanted and current cardinalityNext < MAX_CARDINALITY
       if (
-        cardinalityIncrease != 0 && highestLiquidityPool.lastUpdatedCardinality < MAX_CARDINALITY
+        cardinalityIncrease != 0 &&
+        highestLiquidityPool.lastUpdatedCardinalityNext < MAX_CARDINALITY
       ) {
         // Increase cardinality and update value in reference pool
         // Cannot overflow uint16 as MAX_CARDINALITY + type(uint8).max < uint(16).max
         unchecked {
-          highestLiquidityPool.lastUpdatedCardinality += cardinalityIncrease;
+          highestLiquidityPool.lastUpdatedCardinalityNext += cardinalityIncrease;
           IUniswapV3Pool(highestLiquidityPool.poolAddress).increaseObservationCardinalityNext(
-            highestLiquidityPool.lastUpdatedCardinality
+            highestLiquidityPool.lastUpdatedCardinalityNext
           );
         }
       }
