@@ -209,7 +209,7 @@ contract PriceFeed is IPriceFeed {
         int24 arithmeticMeanTick;
 
         // If `getUpdatedPool` returned non null tickCumulatives
-        if (tickCumulatives[0] != tickCumulatives[1]) {
+        if (tickCumulatives.length != 0) {
           // Calculate arithmeticMeanTick from tickCumulatives
           int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
           arithmeticMeanTick = int24(tickCumulativesDelta / int56(uint56(secondsTwapInterval)));
