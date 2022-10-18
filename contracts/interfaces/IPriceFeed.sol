@@ -26,14 +26,14 @@ interface IPriceFeed {
     uint128 baseAmount,
     address baseToken,
     address quoteToken,
-    uint32 secondsAgo
+    uint32 secondsTwapInterval
   ) external view returns (uint256 quoteAmount);
 
   function getUpdatedPool(
     address tokenA,
     address tokenB,
-    uint256 updateInterval,
-    uint8 cardinalityIncrease
+    uint256 secondsUpdateInterval,
+    uint8 cardinalityNextIncrease
   )
     external
     returns (
@@ -46,15 +46,15 @@ interface IPriceFeed {
     uint128 baseAmount,
     address baseToken,
     address quoteToken,
-    uint32 secondsAgo,
-    uint256 updateInterval,
-    uint8 cardinalityIncrease
+    uint32 secondsTwapInterval,
+    uint256 secondsUpdateInterval,
+    uint8 cardinalityNextIncrease
   ) external returns (uint256 quoteAmount);
 
   function updatePool(
     address tokenA,
     address tokenB,
-    uint8 cardinalityIncrease
+    uint8 cardinalityNextIncrease
   )
     external
     returns (
