@@ -26,14 +26,14 @@ contract PriceFeed is IPriceFeed {
   /// ======= Immutable Storage =======
   /// =================================
 
+  /// Current observation cardinality value under which a cardinality increase is triggered when updating pools
+  uint16 public constant MAX_CARDINALITY = 256;
   /// TWAP interval used when updating pools
   uint32 public constant UPDATE_INTERVAL = 30 minutes;
   /// UPDATE_INTERVAL multiplied by 2**160
   uint192 private constant UPDATE_INTERVAL_X160 = uint192(UPDATE_INTERVAL) << 160;
   /// UPDATE_INTERVAL formatted as uint32[]
   uint32[] private UPDATE_SECONDS_AGO = [UPDATE_INTERVAL, 0];
-  /// Current observation cardinality value under which a cardinality increase is triggered when updating pools
-  uint16 public MAX_CARDINALITY = 256;
   /// UniswapV3Pool fee tiers
   uint24[] public fees = [10000, 3000, 500, 100];
   /// Mapping of active fee tiers
