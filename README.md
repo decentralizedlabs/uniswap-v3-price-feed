@@ -56,19 +56,18 @@ See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 
 `PriceFeed` has been deployed to `0xf2E8176c0b67232b20205f4dfbCeC3e74bca471F` on the following networks:
 
-<!-- - [Ethereum Mainnet](https://etherscan.io/address/0xf2E8176c0b67232b20205f4dfbCeC3e74bca471F) -->
-
+- [Ethereum Mainnet](https://etherscan.io/address/0xf2E8176c0b67232b20205f4dfbCeC3e74bca471F)
 - [Ethereum Goerli Testnet](https://goerli.etherscan.io/address/0xf2E8176c0b67232b20205f4dfbCeC3e74bca471F)
 
 ## Support the project
 
-You can support the project by donating to either its slicer or Juicebox treasury.
+You can support the project by donating to its slicer or Juicebox treasury.
 
 ### [Slicer](https://slice.so/slicer/22)
 
-By sending ETH to the slicer address `0x83c36BED51b6de81986390b6e64aDa045694E857` you're supporting the contributors of the project. You&apos;ll appear as sponsor in the slicer page and eventually receive rewards over time made by the development team.
+By sending ETH to the slicer address `0x83c36BED51b6de81986390b6e64aDa045694E857` you're supporting the contributors of the project. Doing so will allow you to appear as sponsor in the slicer page.
 
-In fact, **ownership over the slicer is distributed to the contributors of this repository, proportionally to their contributions**. You can check the ownership distribution in the [slicer page](https://slice.so/slicer/22?view=owners), or the specifics of each slice mint on each merged PR.
+> **Ownership over the slicer is split between the project's contributors**. You can check the ownership distribution in the [slicer page](https://slice.so/slicer/22?view=owners), or the specifics of past slice distributions on each merged PR.
 
 ### [Juicebox Treasury](https://juicebox.money/v2/p/264)
 
@@ -78,10 +77,6 @@ Funds sent to the [Juicebox treasury](https://juicebox.money/v2/p/264) are forwa
 
 This project uses [Foundry](https://github.com/foundry-rs/foundry) as development framework.
 
-### Merge-to-earn
+### Merge to earn
 
-When a PR is merged, **contributors receive slices granting them a part of the ownership and earnings related to the project**.
-
-Discussion on the slices to be issued can happen on Github or elsewhere. Once the PR is merged, the agreed amount of slices is minted to all contributors involved by the [gnosis safe](https://etherscan.io/address/0x71e1c244eF17516bcD1FA65db74F8F4f397e9097) (owned by maintainers).
-
-Learn how Slice works on the [website](https://slice.so) or ask questions on [Discord](https://discord.gg/c7puDHjgMU).
+This project uses [Merge to earn](https://github.com/slice-so/merge-to-earn) to reward contributors with a piece of the [Price feed slicer](https://slice.so/slicer/22) and its earnings, when pull requests are merged.
