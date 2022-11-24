@@ -48,7 +48,7 @@ See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 ## Gotchas
 
 - Quotes and updates don&apos;t trigger reverts, so any quote or pool equal to respectively `0` or `address(0)` has to be handled appropriately from the caller.
-- Quotes represent a time-weighted average price for a currency in a certain amount of time (see [TWAP oracles](https://docs.uniswap.org/protocol/concepts/V3-overview/oracle)). As such they don&apos;t exactly correspond to the amount displayed during a swap on Uniswap, but they're better suited to estimate the value of a currency.
+- Quotes represent a time-weighted average price for a currency in a certain amount of time (see [TWAP oracles](https://docs.uniswap.org/protocol/concepts/V3-overview/oracle)), or based on a spot price. As such they&apos;re well suited to estimate the value of a currency with respect to another, but they shouldn&apos;t be used to estimate with precision the amount received for a swap.
 - While Uniswap V3 TWAP oracles are much more resilient to attacks than V2 pools, an incentivised party may still be able to manipulate the price significantly. This is especially valid for low liquidity pools.
 - The price feed doesn&apos;t impose a specific TWAP interval, so care should be taken by the caller in choosing an appropriate value.
 
