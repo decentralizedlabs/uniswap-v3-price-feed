@@ -1,2 +1,3 @@
-BaseTest:testGetQuoteNoPool() (gas: 12729)
-BaseTest:testUpdatePool() (gas: 63727)
+BaseTest:testGetQuoteNoPool() (gas: 12845)
+BaseTest:testGetUpdatedPool() (gas: 36288)
+BaseTest:testUpdatePool() (gas: 35539)

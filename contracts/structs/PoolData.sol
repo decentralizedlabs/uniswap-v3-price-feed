@@ -5,4 +5,5 @@ struct PoolData {
   address poolAddress;
   uint24 fee;
   uint48 lastUpdatedTimestamp;
+  uint16 lastUpdatedCardinalityNext;
 }
