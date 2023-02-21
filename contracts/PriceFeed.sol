@@ -317,8 +317,9 @@ contract PriceFeed is IPriceFeed {
    * @param secondsTwapInterval Number of seconds in the past from which to calculate the time-weighted quote
    * @param cardinalityNextIncrease The amount of observation cardinality to increase when updating a pool if
    * current value < MAX_CARDINALITY
-   * @return highestLiquidityPool Pool with the highest highest harmonic mean liquidity
-   * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
+   * @return highestLiquidityPool Pool with the highest harmonic mean liquidity
+   * @return highestTickCumulatives Cumulative tick values of the pool with the highest liquidity
+   * as of 30 minutes from the current block timestamp
    * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
    */
   function _getHighestLiquidityPool(
@@ -330,7 +331,7 @@ contract PriceFeed is IPriceFeed {
     private
     returns (
       PoolData memory highestLiquidityPool,
-      int56[] memory tickCumulatives,
+      int56[] memory highestTickCumulatives,
       uint160 sqrtPriceX96
     )
   {
@@ -340,6 +341,7 @@ contract PriceFeed is IPriceFeed {
     // Add reference for values used in loop
     address poolAddress;
     uint256 harmonicMeanLiquidity;
+    int56[] memory tickCumulatives;
 
     for (uint256 i; i < fees.length; ) {
       // Compute pool address
@@ -358,6 +360,7 @@ contract PriceFeed is IPriceFeed {
           // Update reference values except pool cardinality
           highestLiquidity = harmonicMeanLiquidity;
           highestLiquidityPool = PoolData(poolAddress, fees[i], uint48(block.timestamp), 0);
+          highestTickCumulatives = tickCumulatives;
         }
       }
 
