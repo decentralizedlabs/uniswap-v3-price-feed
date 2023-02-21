@@ -149,7 +149,8 @@ contract PriceFeed is IPriceFeed {
     )
   {
     // Shortcircuit update when `secondsUpdateInterval` == 0
-    if (secondsUpdateInterval == 0) return updatePool(tokenA, tokenB, cardinalityNextIncrease);
+    if (secondsUpdateInterval == 0)
+      return _updatePool(tokenA, tokenB, secondsUpdateInterval, cardinalityNextIncrease);
 
     pool = getPool(tokenA, tokenB);
 
@@ -158,7 +159,7 @@ contract PriceFeed is IPriceFeed {
       pool.poolAddress == address(0) ||
       pool.lastUpdatedTimestamp + secondsUpdateInterval <= block.timestamp
     ) {
-      return updatePool(tokenA, tokenB, cardinalityNextIncrease);
+      return _updatePool(tokenA, tokenB, secondsUpdateInterval, cardinalityNextIncrease);
     }
   }
 
@@ -233,7 +234,7 @@ contract PriceFeed is IPriceFeed {
   }
 
   /**
-   * @notice Updates stored pool with the one having the highest TWAL in the last 30 minutes.
+   * @notice Updates stored pool with the one having the highest TWAL in the last 30 minutes. See `_updatePool`.
    * @param tokenA Address of one of the ERC20 token contract in the pool
    * @param tokenB Address of the other ERC20 token contract in the pool
    * @param cardinalityNextIncrease The amount of observation cardinality to increase when updating a pool if
@@ -254,6 +255,33 @@ contract PriceFeed is IPriceFeed {
       uint160 sqrtPriceX96
     )
   {
+    return _updatePool(tokenA, tokenB, 0, cardinalityNextIncrease);
+  }
+
+  /**
+   * @notice Updates stored pool with the one having the highest TWAL in the last 30 minutes.
+   * @param tokenA Address of one of the ERC20 token contract in the pool
+   * @param tokenB Address of the other ERC20 token contract in the pool
+   * @param secondsTwapInterval Number of seconds in the past from which to calculate the time-weighted quote
+   * @param cardinalityNextIncrease The amount of observation cardinality to increase when updating a pool if
+   * current value < MAX_CARDINALITY
+   * @return highestLiquidityPool Pool with the highest harmonic mean liquidity
+   * @return tickCumulatives Cumulative tick values as of 30 minutes from the current block timestamp
+   * @return sqrtPriceX96 The current price of the pool as a sqrt(token1/token0) Q64.96 value
+   */
+  function _updatePool(
+    address tokenA,
+    address tokenB,
+    uint256 secondsTwapInterval,
+    uint8 cardinalityNextIncrease
+  )
+    internal
+    returns (
+      PoolData memory highestLiquidityPool,
+      int56[] memory tickCumulatives,
+      uint160 sqrtPriceX96
+    )
+  {
     // Order token addresses
     (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 
@@ -261,6 +289,7 @@ contract PriceFeed is IPriceFeed {
     (highestLiquidityPool, tickCumulatives, sqrtPriceX96) = _getHighestLiquidityPool(
       token0,
       token1,
+      secondsTwapInterval,
       cardinalityNextIncrease
     );
 
@@ -285,6 +314,7 @@ contract PriceFeed is IPriceFeed {
    * @notice Gets the pool with the highest harmonic liquidity.
    * @param token0 Address of the first ERC20 token contract in the pool
    * @param token1 Address of the second ERC20 token contract in the pool
+   * @param secondsTwapInterval Number of seconds in the past from which to calculate the time-weighted quote
    * @param cardinalityNextIncrease The amount of observation cardinality to increase when updating a pool if
    * current value < MAX_CARDINALITY
    * @return highestLiquidityPool Pool with the highest highest harmonic mean liquidity
@@ -294,6 +324,7 @@ contract PriceFeed is IPriceFeed {
   function _getHighestLiquidityPool(
     address token0,
     address token1,
+    uint256 secondsTwapInterval,
     uint8 cardinalityNextIncrease
   )
     private
@@ -337,23 +368,24 @@ contract PriceFeed is IPriceFeed {
 
     // If there is a pool to update
     if (highestLiquidityPool.poolAddress != address(0)) {
-      // Update observation cardinality of `highestLiquidityPool`
-      (sqrtPriceX96, , , , highestLiquidityPool.lastUpdatedCardinalityNext, , ) = IUniswapV3Pool(
-        highestLiquidityPool.poolAddress
-      ).slot0();
+      if (cardinalityNextIncrease != 0 || secondsTwapInterval == 0) {
+        // Update observation cardinality of `highestLiquidityPool`
+        (sqrtPriceX96, , , , highestLiquidityPool.lastUpdatedCardinalityNext, , ) = IUniswapV3Pool(
+          highestLiquidityPool.poolAddress
+        ).slot0();
 
-      // If a cardinality increase is wanted and current cardinalityNext < MAX_CARDINALITY
-      if (
-        cardinalityNextIncrease != 0 &&
-        highestLiquidityPool.lastUpdatedCardinalityNext < MAX_CARDINALITY
-      ) {
-        // Increase cardinality and update value in reference pool
-        // Cannot overflow uint16 as MAX_CARDINALITY + type(uint8).max < uint(16).max
-        unchecked {
-          highestLiquidityPool.lastUpdatedCardinalityNext += cardinalityNextIncrease;
-          IUniswapV3Pool(highestLiquidityPool.poolAddress).increaseObservationCardinalityNext(
-            highestLiquidityPool.lastUpdatedCardinalityNext
-          );
+        // If a cardinality increase is wanted and current cardinalityNext < MAX_CARDINALITY
+        if (cardinalityNextIncrease != 0) {
+          if (highestLiquidityPool.lastUpdatedCardinalityNext < MAX_CARDINALITY) {
+            // Increase cardinality and update value in reference pool
+            // Cannot overflow uint16 as MAX_CARDINALITY + type(uint8).max < uint(16).max
+            unchecked {
+              highestLiquidityPool.lastUpdatedCardinalityNext += cardinalityNextIncrease;
+              IUniswapV3Pool(highestLiquidityPool.poolAddress).increaseObservationCardinalityNext(
+                highestLiquidityPool.lastUpdatedCardinalityNext
+              );
+            }
+          }
         }
       }
     }
