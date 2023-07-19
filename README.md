@@ -58,6 +58,8 @@ See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 
 - [Ethereum Mainnet](https://etherscan.io/address/0x71c96edD5D36935d5c8d6B78bCcD4113725297e3)
 - [Ethereum Goerli Testnet](https://goerli.etherscan.io/address/0x71c96edD5D36935d5c8d6B78bCcD4113725297e3)
+- [Optimism](https://optimistic.etherscan.io/address/0x71c96edD5D36935d5c8d6B78bCcD4113725297e3)
+- [Base on 0xAE3...fc6](https://basescan.org/address/0xAE38a794E839D045460839ABe288a8e5C28B0fc6)
 
 ## Support the project
 
