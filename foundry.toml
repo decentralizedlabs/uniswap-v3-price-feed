@@ -21,7 +21,7 @@ op = "${RPC_URL_OPTIMISM}"
 base = "${RPC_URL_BASE}"
 
 [etherscan]
-goerli = {key = "${ETHERSCAN_KEY}", url = "https://api-goerli.etherscan.io/api"}
-mainnet = {key = "${ETHERSCAN_KEY}"}
-op = {key = "${ETHERSCAN_KEY}"}
-base = {key = "${ETHERSCAN_KEY}"}
+goerli = {key = "${ETHERSCAN_API_KEY}", url = "https://api-goerli.etherscan.io/api"}
+mainnet = {key = "${ETHERSCAN_API_KEY}"}
+op = {key = "${ETHERSCAN_API_KEY}"}
+base = {key = "${ETHERSCAN_API_KEY}", chain = 8453, url = "https://api.basescan.org/api"}
