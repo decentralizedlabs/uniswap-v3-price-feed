@@ -23,6 +23,8 @@ contract DeployScript is Script {
       )
     );
 
+    // priceFeed = new PriceFeed(uniswapV3Factory); // alt deploy when CREATE3 is not available
+
     vm.stopBroadcast();
   }
 }
