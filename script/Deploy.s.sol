@@ -9,6 +9,7 @@ import {CREATE3Factory} from "create3-factory/CREATE3Factory.sol";
 contract DeployScript is Script {
   function run() public returns (PriceFeed priceFeed) {
     address uniswapV3Factory = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+    // address uniswapV3Factory = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD; // ONLY BASE
     CREATE3Factory create3Factory = CREATE3Factory(0x9fBB3DF7C40Da2e5A0dE984fFE2CCB7C47cd0ABf);
 
     bytes32 salt = keccak256(bytes(vm.envString("SALT")));
