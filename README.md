@@ -33,7 +33,7 @@ At the same time anyone can use `getPool` to retrieve the current main pool for 
 
 This makes it easy and efficient to interact with TWAP oracles or integrate them into other smart contracts.
 
-> The price feed will soon be used by the [Slice protocol](https://slice.so) to provide dynamic pricing for products in any ERC20 currency, periodically updating the pools it interacts with.
+> The price feed is used by the [Slice protocol](https://slice.so) to provide dynamic pricing for products in any ERC20 currency, periodically updating the pools it interacts with.
 
 ## Functions
 
@@ -61,19 +61,19 @@ See the specifics in the [PriceFeed](contracts/PriceFeed.sol) contract.
 - [Optimism](https://optimistic.etherscan.io/address/0x71c96edD5D36935d5c8d6B78bCcD4113725297e3)
 - [Base on 0x2b3...58F](https://basescan.org/address/0x2b3eEe365CE2c8A21096a348fc9005233229b58F)
 
-## Support the project
+<!-- ## Support the project
 
 You can support the project by donating to its slicer or Juicebox treasury.
 
-### [Slicer](https://slice.so/slicer/22)
+### [Slicer](https://mainnet.slice.so/slicer/22)
 
-By sending ETH to the slicer address `0x83c36BED51b6de81986390b6e64aDa045694E857` you're supporting the contributors of the project. Doing so will allow you to appear as sponsor in the slicer page.
+By sending ETH to the slicer address `0x83c36BED51b6de81986390b6e64aDa045694E857` on Ethereum mainnet you're supporting the contributors of the project. Doing so will allow you to appear as sponsor in the slicer page.
 
-> **Ownership over the slicer is split between the project's contributors**. You can check the ownership distribution in the [slicer page](https://slice.so/slicer/22?view=owners), or the specifics of past slice distributions on each merged PR.
+> **Ownership over the slicer is split between the project's contributors**. You can check the ownership distribution in the [slicer page](https://slice.so/slicer/22?view=owners), or the specifics of past slice distributions on each merged PR. -->
 
-### [Juicebox Treasury](https://juicebox.money/v2/p/264)
+<!-- ### [Juicebox Treasury](https://juicebox.money/v2/p/264)
 
-Funds sent to the [Juicebox treasury](https://juicebox.money/v2/p/264) are forwarded to the slicer. The only difference is that instead of appearing as a sponsor on the slicer page you&apos;ll receive tokens in exchange for your support.
+Funds sent to the [Juicebox treasury](https://juicebox.money/v2/p/264) are forwarded to the slicer. The only difference is that instead of appearing as a sponsor on the slicer page you&apos;ll receive tokens in exchange for your support. -->
 
 ## Contribute
 
@@ -81,4 +81,4 @@ This project uses [Foundry](https://github.com/foundry-rs/foundry) as developmen
 
 ### Merge to earn
 
-This project uses [Merge to earn](https://github.com/slice-so/merge-to-earn) to reward contributors with a piece of the [Price feed slicer](https://slice.so/slicer/22) and its earnings, when pull requests are merged.
+This project uses [Merge to earn](https://github.com/slice-so/merge-to-earn) to reward contributors with a piece of the [Price feed slicer](https://mainnet.slice.so/slicer/22) and its earnings, when pull requests are merged.
